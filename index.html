@@ -1,49 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Business Dashboard</title>
+  <meta charset="UTF-8" />
+  <title>Expense Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="script.js" defer></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    canvas { max-width: 100%; margin-bottom: 40px; }
+  </style>
 </head>
 <body>
-  <h2>Dashboard</h2>
-  Year:
-  <select id="yearSelect">
-    <option>2023</option>
-    <option>2024</option>
-    <option selected>2025</option>
-  </select>
-  Month:
-  <select id="monthSelect">
-    <option>All</option>
-    <option>January</option>
-    <option>February</option>
-    <option>March</option>
-    <option>April</option>
-    <option>May</option>
-    <option>June</option>
-    <option>July</option>
-    <option>August</option>
-    <option>September</option>
-    <option>October</option>
-    <option>November</option>
-    <option>December</option>
-  </select>
 
-  <h3>Total Sales: ₱<span id="salesKPI">0</span></h3>
-  <h3>Total Expenses: ₱<span id="expensesKPI">0</span></h3>
-  <h3>Total Revenue: ₱<span id="revenueKPI">0</span></h3>
+  <h1>📊 Expense Dashboard</h1>
 
-  <h3>Operating Expense Breakdown</h3>
-  <canvas id="operatingexpense-chart"></canvas>
+  <label>Year:
+    <select id="yearSelect">
+      <option>2023</option>
+      <option>2024</option>
+      <option selected>2025</option>
+    </select>
+  </label>
 
-  <h3>Labor Expense Breakdown</h3>
-  <canvas id="laborexpense-chart"></canvas>
+  <label>Month:
+    <select id="monthSelect">
+      <option value="all">All</option>
+      <option>January</option>
+      <option>February</option>
+      <option>March</option>
+      <option>April</option>
+      <option>May</option>
+      <option>June</option>
+      <option>July</option>
+      <option>August</option>
+      <option>September</option>
+      <option>October</option>
+      <option>November</option>
+      <option>December</option>
+    </select>
+  </label>
 
-  <h3>Fixed Expense Breakdown</h3>
-  <canvas id="fixedexpense-chart"></canvas>
+  <h2>Key Metrics</h2>
+  <ul>
+    <li><strong>Total Sales:</strong> ₱<span id="salesKPI">0</span></li>
+    <li><strong>Total Expenses:</strong> ₱<span id="expensesKPI">0</span></li>
+    <li><strong>Total Revenue:</strong> ₱<span id="revenueKPI">0</span></li>
+  </ul>
 
-  <h3>Food & Beverage Purchases</h3>
-  <canvas id="foodandbeveragespurchases-chart"></canvas>
+  <h2>Summary (% of Revenue)</h2>
+  <canvas id="stacked-category-chart" height="200"></canvas>
+
+  <h2>Monthly Expense Trends (% of Revenue)</h2>
+
+  <h3>Operating Expense - Monthly</h3>
+  <canvas id="monthly-operating-chart" height="200"></canvas>
+
+  <h3>Labor Expense - Monthly</h3>
+  <canvas id="monthly-labor-chart" height="200"></canvas>
+
+  <h3>Fixed Expense - Monthly</h3>
+  <canvas id="monthly-fixed-chart" height="200"></canvas>
+
+  <h3>Food & Beverage - Monthly</h3>
+  <canvas id="monthly-fb-chart" height="200"></canvas>
+
+  <script src="script.js" defer></script>
 </body>
 </html>
