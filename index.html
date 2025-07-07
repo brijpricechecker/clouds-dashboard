@@ -1,47 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Business Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
 </head>
 <body>
-  <div class="controls">
-    <label>Year:
-      <select id="yearFilter">
-        <option>2023</option>
-        <option>2024</option>
-        <option selected>2025</option>
-      </select>
-    </label>
-    <label>Month:
-      <select id="monthFilter">
-        <option>All</option>
-        <option>January</option>
-        <option>February</option>
-        <option>March</option>
-        <option>April</option>
-        <option>May</option>
-        <option>June</option>
-        <option>July</option>
-        <option>August</option>
-        <option>September</option>
-        <option>October</option>
-        <option>November</option>
-        <option>December</option>
-      </select>
-    </label>
-  </div>
+  <h2>Dashboard</h2>
+  Year:
+  <select id="yearSelect">
+    <option>2023</option>
+    <option>2024</option>
+    <option selected>2025</option>
+  </select>
+  Month:
+  <select id="monthSelect">
+    <option>All</option>
+    <option>January</option>
+    <option>February</option>
+    <option>March</option>
+    <option>April</option>
+    <option>May</option>
+    <option>June</option>
+    <option>July</option>
+    <option>August</option>
+    <option>September</option>
+    <option>October</option>
+    <option>November</option>
+    <option>December</option>
+  </select>
 
-  <div class="kpis">
-    <div>Total Sales: <span id="sales">₱0</span></div>
-    <div>Total Expenses: <span id="expenses">₱0</span></div>
-    <div>Total Revenue: <span id="revenue">₱0</span></div>
-  </div>
+  <h3>Total Sales: ₱<span id="salesKPI">0</span></h3>
+  <h3>Total Expenses: ₱<span id="expensesKPI">0</span></h3>
+  <h3>Total Revenue: ₱<span id="revenueKPI">0</span></h3>
 
-  <canvas id="categoryChart" width="600" height="300"></canvas>
+  <h3>Operating Expense Breakdown</h3>
+  <canvas id="operatingexpense-chart"></canvas>
 
-  <script src="script.js"></script>
+  <h3>Labor Expense Breakdown</h3>
+  <canvas id="laborexpense-chart"></canvas>
+
+  <h3>Fixed Expense Breakdown</h3>
+  <canvas id="fixedexpense-chart"></canvas>
+
+  <h3>Food & Beverage Purchases</h3>
+  <canvas id="foodandbeveragespurchases-chart"></canvas>
 </body>
 </html>
