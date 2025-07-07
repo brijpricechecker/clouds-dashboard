@@ -5,8 +5,23 @@
   <title>Expense Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    canvas { max-width: 100%; margin-bottom: 40px; }
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+    .kpi-container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .kpi-box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      flex: 1;
+      text-align: center;
+    }
+    canvas { max-width: 100%; margin-bottom: 40px; height: 300px !important; }
+    h1, h2, h3 { color: #333; }
+    select { padding: 5px 10px; margin: 0 10px; }
   </style>
 </head>
 <body>
@@ -39,29 +54,34 @@
     </select>
   </label>
 
-  <h2>Key Metrics</h2>
-  <ul>
-    <li><strong>Total Sales:</strong> ₱<span id="salesKPI">0</span></li>
-    <li><strong>Total Expenses:</strong> ₱<span id="expensesKPI">0</span></li>
-    <li><strong>Total Revenue:</strong> ₱<span id="revenueKPI">0</span></li>
-  </ul>
+  <div class="kpi-container">
+    <div class="kpi-box">
+      <h3>Total Sales</h3>
+      <p><strong>₱<span id="salesKPI">0</span></strong></p>
+    </div>
+    <div class="kpi-box">
+      <h3>Total Expenses</h3>
+      <p><strong>₱<span id="expensesKPI">0</span></strong></p>
+    </div>
+    <div class="kpi-box">
+      <h3>Total Revenue</h3>
+      <p><strong>₱<span id="revenueKPI">0</span></strong></p>
+    </div>
+  </div>
 
-  <h2>Summary (% of Revenue)</h2>
-  <canvas id="stacked-category-chart" height="200"></canvas>
+  <h2>Monthly Expense Trends vs Targets (% of Revenue)</h2>
 
-  <h2>Monthly Expense Trends (% of Revenue)</h2>
+  <h3>Operating Expense</h3>
+  <canvas id="monthly-operating-chart"></canvas>
 
-  <h3>Operating Expense - Monthly</h3>
-  <canvas id="monthly-operating-chart" height="200"></canvas>
+  <h3>Labor Expense</h3>
+  <canvas id="monthly-labor-chart"></canvas>
 
-  <h3>Labor Expense - Monthly</h3>
-  <canvas id="monthly-labor-chart" height="200"></canvas>
+  <h3>Fixed Expense</h3>
+  <canvas id="monthly-fixed-chart"></canvas>
 
-  <h3>Fixed Expense - Monthly</h3>
-  <canvas id="monthly-fixed-chart" height="200"></canvas>
-
-  <h3>Food & Beverage - Monthly</h3>
-  <canvas id="monthly-fb-chart" height="200"></canvas>
+  <h3>Food & Beverage</h3>
+  <canvas id="monthly-fb-chart"></canvas>
 
   <script src="script.js" defer></script>
 </body>
