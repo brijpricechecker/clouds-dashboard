@@ -1,0 +1,19 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+.controls {
+  margin-bottom: 20px;
+}
+
+.kpis {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 30px;
+  font-size: 1.2em;
+}
+
+canvas {
+  max-width: 100%;
+}
