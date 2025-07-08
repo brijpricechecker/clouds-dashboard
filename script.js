@@ -1,5 +1,3 @@
-// script.js – Full updated version for KPI + grouped expense chart
-
 const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
 let groupedChart;
 
@@ -16,7 +14,6 @@ function fetchData() {
   fetch(url)
     .then(res => res.json())
     .then(data => {
-  
       // Update KPI boxes
       document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
       document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
@@ -36,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function drawGroupedExpenseChart(data) {
   const monthly = data.monthlyCategoryTotals;
-  const sales = data.totalSales;
+  const salesPerMonth = data.salesPerMonth || {};
   const targets = data.targets;
 
   const months = monthOrder.filter(m => monthly[m]);
@@ -48,7 +45,8 @@ function drawGroupedExpenseChart(data) {
       label: categoryLabel(cat),
       data: months.map(m => {
         const amt = monthly[m][cat] || 0;
-        return sales > 0 ? (amt / sales) * 100 : 0;
+        const monthSales = salesPerMonth[m] || 0;
+        return monthSales > 0 ? (amt / monthSales) * 100 : 0;
       }),
       backgroundColor: colors[i],
       datalabels: {
@@ -70,7 +68,7 @@ function drawGroupedExpenseChart(data) {
       borderWidth: 2,
       pointRadius: 0,
       fill: false,
-      yAxisID: 'y',
+      yAxisID: 'y'
     };
   });
 
@@ -94,7 +92,11 @@ function drawGroupedExpenseChart(data) {
           callbacks: {
             label: function (ctx) {
               const percent = ctx.raw.toFixed(1);
-              const peso = ((percent / 100) * sales).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+              const month = ctx.label.toLowerCase();
+              const sale = salesPerMonth[month] || 0;
+              const peso = ((percent / 100) * sale).toLocaleString("en-PH", {
+                style: 'currency', currency: 'PHP'
+              });
               return `${ctx.dataset.label}: ${percent}% (${peso})`;
             }
           }
@@ -131,5 +133,7 @@ function categoryLabel(key) {
 }
 
 function formatPeso(num) {
-  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+  return Number(num).toLocaleString("en-PH", {
+    style: 'currency', currency: 'PHP'
+  });
 }
