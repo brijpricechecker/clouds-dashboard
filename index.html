@@ -9,100 +9,109 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
+      margin: 0;
+      padding: 1rem;
+      background-color: #f9f9f9;
     }
     .filters {
-      margin-bottom: 10px;
-    }
-    .kpi-container {
       display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .kpis {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
       height: 8vh;
     }
     .kpi-box {
-      flex: 1;
-      padding: 10px;
-      background-color: #f4f4f4;
-      border: 1px solid #ddd;
+      background: #ffffff;
+      padding: 1rem;
       border-radius: 8px;
-      text-align: center;
+      flex: 1;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
-    .kpi-box h2 {
-      margin: 0;
-      font-size: 14px;
-      color: #555;
+    .kpi-label {
+      font-size: 0.9rem;
+      color: #666;
     }
-    .kpi-box p {
-      margin: 4px 0 0;
-      font-size: 16px;
+    .kpi-value {
+      font-size: 1.5rem;
       font-weight: bold;
+      color: #333;
     }
     canvas {
-      height: 42vh !important;
-      margin-top: 20px;
+      background-color: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2rem;
     }
-    .category-filter {
-      margin-bottom: 10px;
+    select {
+      padding: 0.5rem;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
   <div class="filters">
-    <label for="yearSelect">Year: </label>
-    <select id="yearSelect">
-      <option value="2023">2023</option>
-      <option value="2024">2024</option>
-      <option value="2025" selected>2025</option>
-    </select>
-
-    <label for="monthSelect">Month: </label>
-    <select id="monthSelect">
-      <option value="all">All</option>
-      <option value="january">January</option>
-      <option value="february">February</option>
-      <option value="march">March</option>
-      <option value="april">April</option>
-      <option value="may">May</option>
-      <option value="june">June</option>
-      <option value="july">July</option>
-      <option value="august">August</option>
-      <option value="september">September</option>
-      <option value="october">October</option>
-      <option value="november">November</option>
-      <option value="december">December</option>
-    </select>
+    <label>Year:
+      <select id="yearSelect">
+        <option>2023</option>
+        <option>2024</option>
+        <option selected>2025</option>
+      </select>
+    </label>
+    <label>Month:
+      <select id="monthSelect">
+        <option value="all">All</option>
+        <option>January</option>
+        <option>February</option>
+        <option>March</option>
+        <option>April</option>
+        <option>May</option>
+        <option>June</option>
+        <option>July</option>
+        <option>August</option>
+        <option>September</option>
+        <option>October</option>
+        <option>November</option>
+        <option>December</option>
+      </select>
+    </label>
+    <label>Category:
+      <select id="categorySelect">
+        <option value="all">All</option>
+        <option value="foodandbeveragespurchases">Food & Beverage</option>
+        <option value="fixedexpense">Fixed</option>
+        <option value="laborexpense">Labor</option>
+        <option value="operatingexpense">Operating</option>
+        <option value="misc">Misc</option>
+      </select>
+    </label>
   </div>
 
-  <div class="category-filter">
-    <label for="categorySelect">Major Expense Category:</label>
-    <select id="categorySelect">
-      <option value="all" selected>All</option>
-      <option value="foodandbeveragespurchases">Food & Beverage</option>
-      <option value="fixedexpense">Fixed</option>
-      <option value="laborexpense">Labor</option>
-      <option value="operatingexpense">Operating</option>
-      <option value="misc">Misc</option>
-    </select>
-  </div>
-
-  <div class="kpi-container">
+  <div class="kpis">
     <div class="kpi-box">
-      <h2>Total Sales</h2>
-      <p id="salesKPI">₱0.00</p>
+      <div class="kpi-label">Total Sales</div>
+      <div class="kpi-value" id="salesKPI">₱0</div>
     </div>
     <div class="kpi-box">
-      <h2>Total Expenses</h2>
-      <p id="expensesKPI">₱0.00</p>
+      <div class="kpi-label">Total Expenses</div>
+      <div class="kpi-value" id="expensesKPI">₱0</div>
     </div>
     <div class="kpi-box">
-      <h2>Total Revenue</h2>
-      <p id="revenueKPI">₱0.00</p>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value" id="revenueKPI">₱0</div>
     </div>
   </div>
 
-  <canvas id="grouped-expense-chart"></canvas>
-  <canvas id="sales-expense-chart"></canvas>
+  <canvas id="grouped-expense-chart" height="42%"></canvas>
+  <canvas id="sales-expense-chart" height="42%"></canvas>
 
   <script src="script.js"></script>
 </body>
