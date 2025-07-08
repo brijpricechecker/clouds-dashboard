@@ -16,6 +16,8 @@ function fetchData() {
   fetch(url)
     .then(res => res.json())
     .then(data => {
+  console.log("Backend data:", data);
+
       // Update KPI boxes
       document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
       document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
