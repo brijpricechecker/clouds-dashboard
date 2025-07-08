@@ -130,5 +130,5 @@ function categoryLabel(key) {
 }
 
 function formatPeso(num) {
-  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP" });
+  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
