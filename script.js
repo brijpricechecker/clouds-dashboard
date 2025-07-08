@@ -1,7 +1,8 @@
-  // ✅ script.js - Full Updated Version
+// script.js – Updated for cleaner grouped chart with category filter
 
-const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
-let groupedChart;
+const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
+const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
+let groupedChart, salesExpenseChart;
 
 const monthOrder = [
   "january", "february", "march", "april", "may", "june",
@@ -11,6 +12,8 @@ const monthOrder = [
 function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
+  const category = document.getElementById("categorySelect").value;
+
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -20,8 +23,8 @@ function fetchData() {
       document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
       document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
 
-      drawGroupedExpenseChart(data);
-      drawSalesVsExpensesChart(data);
+      drawGroupedExpenseChart(data, category);
+      drawSalesVsExpenseChart(data);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
@@ -29,42 +32,45 @@ function fetchData() {
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("yearSelect").addEventListener("change", fetchData);
   document.getElementById("monthSelect").addEventListener("change", fetchData);
+  document.getElementById("categorySelect").addEventListener("change", fetchData);
   fetchData();
 });
 
-function drawGroupedExpenseChart(data) {
+function drawGroupedExpenseChart(data, filterCategory) {
   const monthly = data.monthlyCategoryTotals;
-  const salesPerMonth = data.salesPerMonth || {};
+  const monthlySales = data.totalSalesPerMonth;
   const targets = data.targets;
 
   const months = monthOrder.filter(m => monthly[m]);
-  const categories = ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
-  const colors = ["#007bff", "#28a745", "#ffc107", "#17a2b8", "#6f42c1"];
+  const categories = filterCategory === "all" ? Object.keys(targets) : [filterCategory];
+  const colors = {
+    foodandbeveragespurchases: "#007bff",
+    fixedexpense: "#28a745",
+    laborexpense: "#ffc107",
+    operatingexpense: "#17a2b8",
+    misc: "#6f42c1"
+  };
 
-  const datasets = categories.map((cat, i) => {
+  const datasets = categories.map(cat => {
     return {
       label: categoryLabel(cat),
       data: months.map(m => {
-        const amt = monthly[m][cat] || 0;
-        const monthSales = salesPerMonth[m] || 0;
-        return monthSales > 0 ? (amt / monthSales) * 100 : 0;
+        const catAmt = (monthly[m]?.[cat] || 0);
+        const sale = monthlySales[m] || 0;
+        return sale > 0 ? (catAmt / sale) * 100 : 0;
       }),
-      backgroundColor: colors[i],
+      backgroundColor: colors[cat] || "#999",
       datalabels: {
-        color: '#000',
-        anchor: 'end',
-        align: 'top',
-        formatter: v => v.toFixed(1) + "%"
+        color: '#000', anchor: 'end', align: 'top', formatter: v => v.toFixed(1) + "%"
       }
     };
   });
 
-  const targetLines = categories.map((cat, i) => {
+  const targetLines = categories.map(cat => {
     return {
       type: 'line',
-      label: `${categoryLabel(cat)} Target (${targets[cat]}%)`,
       data: Array(months.length).fill(targets[cat]),
-      borderColor: colors[i],
+      borderColor: colors[cat],
       borderDash: [5, 5],
       borderWidth: 2,
       pointRadius: 0,
@@ -75,7 +81,7 @@ function drawGroupedExpenseChart(data) {
 
   if (groupedChart) groupedChart.destroy();
 
-  groupedChart = new Chart(ctx, {
+  groupedChart = new Chart(ctxGrouped, {
     type: "bar",
     data: {
       labels: months.map(capitalize),
@@ -84,96 +90,73 @@ function drawGroupedExpenseChart(data) {
     options: {
       responsive: true,
       plugins: {
-        title: {
-          display: true,
-          text: "Monthly Expenses as % of Revenue"
-        },
-        legend: { position: 'bottom' },
+        title: { display: true, text: "Monthly Expenses as % of Revenue" },
+        legend: { display: true, position: 'bottom' },
         tooltip: {
           callbacks: {
             label: function (ctx) {
-              const percent = ctx.raw.toFixed(1);
+              const percent = ctx.raw?.toFixed?.(1);
               const month = ctx.label.toLowerCase();
-              const sale = salesPerMonth[month] || 0;
-              const peso = ((percent / 100) * sale).toLocaleString("en-PH", {
-                style: 'currency', currency: 'PHP'
-              });
+              const sales = monthlySales[month] || 0;
+              const peso = ((percent / 100) * sales).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
               return `${ctx.dataset.label}: ${percent}% (${peso})`;
             }
           }
+        },
+        datalabels: {
+          display: true,
+          anchor: 'end',
+          align: 'top'
         }
       },
       scales: {
         y: {
           beginAtZero: true,
           max: 100,
-          title: {
-            display: true,
-            text: "% of Revenue"
-          }
-        }
+          grid: { display: false },
+          title: { display: true, text: "% of Revenue" }
+        },
+        x: { grid: { display: false } }
       }
     },
     plugins: [ChartDataLabels]
   });
 }
 
-function drawSalesVsExpensesChart(data) {
-  const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
-  const salesPerMonth = data.totalSalesPerMonth || {};
-  const expensePerMonth = data.totalExpensesPerMonth || {};
+function drawSalesVsExpenseChart(data) {
+  const months = monthOrder;
+  const salesData = months.map(m => data.totalSalesPerMonth[m] || 0);
+  const expenseData = months.map(m => data.totalExpensesPerMonth[m] || 0);
 
-  const months = monthOrder.filter(m => salesPerMonth[m] > 0 || expensePerMonth[m] > 0);
-  const salesData = months.map(m => salesPerMonth[m] || 0);
-  const expenseData = months.map(m => expensePerMonth[m] || 0);
+  if (salesExpenseChart) salesExpenseChart.destroy();
 
-  if (window.salesExpenseChart) {
-    window.salesExpenseChart.destroy();
-  }
-
-  window.salesExpenseChart = new Chart(ctx2, {
-    type: "bar",
+  salesExpenseChart = new Chart(ctxSales, {
+    type: 'bar',
     data: {
       labels: months.map(capitalize),
       datasets: [
-        {
-          label: "Sales",
-          data: salesData,
-          backgroundColor: "#4CAF50"
-        },
-        {
-          label: "Expenses",
-          data: expenseData,
-          backgroundColor: "#F44336"
-        }
+        { label: 'Sales', data: salesData, backgroundColor: '#007bff' },
+        { label: 'Expenses', data: expenseData, backgroundColor: '#dc3545' }
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        title: {
-          display: true,
-          text: "Monthly Sales vs Expenses"
-        },
+        title: { display: true, text: "Monthly Sales vs Expenses" },
+        legend: { position: 'bottom' },
         tooltip: {
           callbacks: {
-            label: function (ctx) {
-              return `${ctx.dataset.label}: ${ctx.raw.toLocaleString("en-PH", {
-                style: "currency",
-                currency: "PHP"
-              })}`;
-            }
+            label: ctx => `${ctx.dataset.label}: ` + formatPeso(ctx.raw)
           }
         }
       },
       scales: {
         y: {
           beginAtZero: true,
-          title: {
-            display: true,
-            text: "Amount (PHP)"
-          }
-        }
+          grid: { display: false },
+          title: { display: true, text: "PHP" }
+        },
+        x: { grid: { display: false } }
       }
     }
   });
@@ -195,7 +178,5 @@ function categoryLabel(key) {
 }
 
 function formatPeso(num) {
-  return Number(num).toLocaleString("en-PH", {
-    style: 'currency', currency: 'PHP'
-  });
+  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
