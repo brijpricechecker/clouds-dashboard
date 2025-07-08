@@ -1,3 +1,5 @@
+  // ✅ script.js - Full Updated Version
+
 const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
 let groupedChart;
 
@@ -14,13 +16,12 @@ function fetchData() {
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      // Update KPI boxes
       document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
       document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
       document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
 
-      // Draw grouped chart
       drawGroupedExpenseChart(data);
+      drawSalesVsExpensesChart(data);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
@@ -114,6 +115,67 @@ function drawGroupedExpenseChart(data) {
       }
     },
     plugins: [ChartDataLabels]
+  });
+}
+
+function drawSalesVsExpensesChart(data) {
+  const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
+  const salesPerMonth = data.totalSalesPerMonth || {};
+  const expensePerMonth = data.totalExpensesPerMonth || {};
+
+  const months = monthOrder.filter(m => salesPerMonth[m] > 0 || expensePerMonth[m] > 0);
+  const salesData = months.map(m => salesPerMonth[m] || 0);
+  const expenseData = months.map(m => expensePerMonth[m] || 0);
+
+  if (window.salesExpenseChart) {
+    window.salesExpenseChart.destroy();
+  }
+
+  window.salesExpenseChart = new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels: months.map(capitalize),
+      datasets: [
+        {
+          label: "Sales",
+          data: salesData,
+          backgroundColor: "#4CAF50"
+        },
+        {
+          label: "Expenses",
+          data: expenseData,
+          backgroundColor: "#F44336"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: "Monthly Sales vs Expenses"
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return `${ctx.dataset.label}: ${ctx.raw.toLocaleString("en-PH", {
+                style: "currency",
+                currency: "PHP"
+              })}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Amount (PHP)"
+          }
+        }
+      }
+    }
   });
 }
 
