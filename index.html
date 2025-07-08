@@ -8,111 +8,183 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
-      padding: 1rem;
-      background-color: #f9f9f9;
+      padding: 0;
+      background-color: #f4f4f4;
+      color: #333;
     }
-    .filters {
-      display: flex;
+
+    .container {
+      display: grid;
+      grid-template-columns: 30% 70%;
       gap: 1rem;
-      margin-bottom: 1rem;
+      padding: 1rem;
+      height: 100vh;
+      box-sizing: border-box;
     }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .filters {
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .filters label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .filters select {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
     .kpis {
       display: flex;
+      flex-direction: column;
       gap: 1rem;
-      margin-bottom: 1rem;
-      height: 8vh;
     }
+
     .kpi-box {
       background: #ffffff;
       padding: 1rem;
       border-radius: 8px;
-      flex: 1;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
+
+    .kpi-icon {
+      font-size: 1.5rem;
+    }
+
+    .kpi-details {
+      text-align: right;
+    }
+
     .kpi-label {
       font-size: 0.9rem;
-      color: #666;
+      color: #777;
     }
+
     .kpi-value {
       font-size: 1.5rem;
       font-weight: bold;
-      color: #333;
     }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
     canvas {
       background-color: #fff;
       padding: 1rem;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      margin-bottom: 2rem;
     }
-    select {
-      padding: 0.5rem;
+
+    h2 {
+      margin: 0;
       font-size: 1rem;
+      margin-bottom: 0.5rem;
+      color: #444;
     }
   </style>
 </head>
 <body>
-  <div class="filters">
-    <label>Year:
-      <select id="yearSelect">
-        <option>2023</option>
-        <option>2024</option>
-        <option selected>2025</option>
-      </select>
-    </label>
-    <label>Month:
-      <select id="monthSelect">
-        <option value="all">All</option>
-        <option>January</option>
-        <option>February</option>
-        <option>March</option>
-        <option>April</option>
-        <option>May</option>
-        <option>June</option>
-        <option>July</option>
-        <option>August</option>
-        <option>September</option>
-        <option>October</option>
-        <option>November</option>
-        <option>December</option>
-      </select>
-    </label>
-    <label>Category:
-      <select id="categorySelect">
-        <option value="all">All</option>
-        <option value="foodandbeveragespurchases">Food & Beverage</option>
-        <option value="fixedexpense">Fixed</option>
-        <option value="laborexpense">Labor</option>
-        <option value="operatingexpense">Operating</option>
-        <option value="misc">Misc</option>
-      </select>
-    </label>
+  <div class="container">
+    <div class="sidebar">
+      <div class="filters">
+        <label for="yearSelect">Year</label>
+        <select id="yearSelect">
+          <option>2023</option>
+          <option>2024</option>
+          <option selected>2025</option>
+        </select>
+
+        <label for="monthSelect">Month</label>
+        <select id="monthSelect">
+          <option value="all">All</option>
+          <option>January</option>
+          <option>February</option>
+          <option>March</option>
+          <option>April</option>
+          <option>May</option>
+          <option>June</option>
+          <option>July</option>
+          <option>August</option>
+          <option>September</option>
+          <option>October</option>
+          <option>November</option>
+          <option>December</option>
+        </select>
+
+        <label for="categorySelect">Category</label>
+        <select id="categorySelect">
+          <option value="all">All</option>
+          <option value="foodandbeveragespurchases">Food & Beverage</option>
+          <option value="fixedexpense">Fixed</option>
+          <option value="laborexpense">Labor</option>
+          <option value="operatingexpense">Operating</option>
+          <option value="misc">Misc</option>
+        </select>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi-box">
+          <div class="kpi-icon">📈</div>
+          <div class="kpi-details">
+            <div class="kpi-label">Total Sales</div>
+            <div class="kpi-value" id="salesKPI">₱0</div>
+          </div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-icon">💸</div>
+          <div class="kpi-details">
+            <div class="kpi-label">Total Expenses</div>
+            <div class="kpi-value" id="expensesKPI">₱0</div>
+          </div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-details">
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-value" id="revenueKPI">₱0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div>
+        <h2>Monthly Expenses as % of Revenue</h2>
+        <canvas id="grouped-expense-chart" height="220"></canvas>
+      </div>
+
+      <div>
+        <h2>Monthly Total Sales vs Total Expenses</h2>
+        <canvas id="sales-expense-chart" height="220"></canvas>
+      </div>
+    </div>
   </div>
-
-  <div class="kpis">
-    <div class="kpi-box">
-      <div class="kpi-label">Total Sales</div>
-      <div class="kpi-value" id="salesKPI">₱0</div>
-    </div>
-    <div class="kpi-box">
-      <div class="kpi-label">Total Expenses</div>
-      <div class="kpi-value" id="expensesKPI">₱0</div>
-    </div>
-    <div class="kpi-box">
-      <div class="kpi-label">Total Revenue</div>
-      <div class="kpi-value" id="revenueKPI">₱0</div>
-    </div>
-  </div>
-
-  <canvas id="grouped-expense-chart" height="45%"></canvas>
-  <canvas id="sales-expense-chart" height="45%"></canvas>
-
   <script src="script.js"></script>
 </body>
 </html>
