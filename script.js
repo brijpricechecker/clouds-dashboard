@@ -1,8 +1,9 @@
-// script.js – Final cleanup for category filter & improved chart layout
+// script.js – Updated for cleaner layout with category filtering and simplified visuals
 
 const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
-const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
-let groupedChart, salesExpenseChart;
+const ctxSalesVsExp = document.getElementById("sales-expense-chart").getContext("2d");
+let groupedChart;
+let salesExpenseChart;
 
 const monthOrder = [
   "january", "february", "march", "april", "may", "june",
@@ -13,7 +14,6 @@ function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
   const category = document.getElementById("categorySelect").value;
-
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -22,9 +22,8 @@ function fetchData() {
       document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
       document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
       document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
-
       drawGroupedExpenseChart(data, category);
-      drawSalesVsExpenseChart(data);
+      drawSalesVsExpensesChart(data);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
@@ -36,52 +35,51 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchData();
 });
 
-function drawGroupedExpenseChart(data, filterCategory) {
+function drawGroupedExpenseChart(data, selectedCategory) {
   const monthly = data.monthlyCategoryTotals;
-  const monthlySales = data.totalSalesPerMonth;
+  const monthlySales = data.monthlySales || {}; // New field expected from backend
   const targets = data.targets;
-
   const months = monthOrder.filter(m => monthly[m]);
-  const allCategories = Object.keys(targets);
-  const categories = filterCategory === "all" ? allCategories : [filterCategory];
 
-  const colors = {
-    foodandbeveragespurchases: "#007bff",
-    fixedexpense: "#28a745",
-    laborexpense: "#ffc107",
-    operatingexpense: "#17a2b8",
-    misc: "#6f42c1"
-  };
+  const categories = ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
+  const colors = ["#007bff", "#28a745", "#ffc107", "#17a2b8", "#6f42c1"];
 
-  const datasets = categories.map(cat => {
-    return {
-      label: categoryLabel(cat),
-      data: months.map(m => {
-        const catAmt = (monthly[m]?.[cat] || 0);
-        const sale = monthlySales[m] || 0;
-        return sale > 0 ? (catAmt / sale) * 100 : 0;
-      }),
-      backgroundColor: colors[cat] || "#999",
-      datalabels: {
-        color: '#000', anchor: 'end', align: 'top', formatter: v => v.toFixed(1) + "%"
-      }
-    };
-  });
+  const datasets = categories
+    .filter(cat => selectedCategory === "all" || selectedCategory === cat)
+    .map((cat, i) => {
+      return {
+        label: categoryLabel(cat),
+        data: months.map(m => {
+          const sales = monthlySales[m] || 1;
+          const amt = monthly[m][cat] || 0;
+          return sales > 0 ? (amt / sales) * 100 : 0;
+        }),
+        backgroundColor: colors[i],
+        datalabels: {
+          color: '#000',
+          anchor: 'end',
+          align: 'top',
+          formatter: v => v.toFixed(1) + "%"
+        }
+      };
+    });
 
-  const targetLines = categories.map(cat => {
-    return {
-      type: 'line',
-      data: Array(months.length).fill(targets[cat]),
-      borderColor: colors[cat],
-      borderDash: [5, 5],
-      borderWidth: 2,
-      pointRadius: 0,
-      fill: false,
-      yAxisID: 'y',
-      label: '', // Removed label for dashed lines
-      datalabels: { display: false }
-    };
-  });
+  const targetLines = categories
+    .filter(cat => selectedCategory === "all" || selectedCategory === cat)
+    .map((cat, i) => {
+      return {
+        type: 'line',
+        data: Array(months.length).fill(targets[cat]),
+        borderColor: colors[i],
+        borderDash: [5, 5],
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        yAxisID: 'y',
+        datalabels: { display: false },
+        label: null
+      };
+    });
 
   if (groupedChart) groupedChart.destroy();
 
@@ -94,35 +92,34 @@ function drawGroupedExpenseChart(data, filterCategory) {
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: "Monthly Expenses as % of Revenue", font: { size: 18 } },
-        legend: { position: 'bottom', labels: { font: { size: 12 } } },
+        legend: { display: true, position: 'bottom' },
+        datalabels: { display: true },
+        title: {
+          display: true,
+          text: "Monthly Expenses as % of Revenue",
+          font: { size: 16 }
+        },
         tooltip: {
           callbacks: {
             label: function (ctx) {
-              const percent = ctx.raw?.toFixed?.(1);
-              const month = ctx.label.toLowerCase();
-              const sales = monthlySales[month] || 0;
-              const peso = ((percent / 100) * sales).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
-              return `${ctx.dataset.label}: ${percent}% (${peso})`;
+              const percent = ctx.raw.toFixed(1);
+              return `${ctx.dataset.label}: ${percent}%`;
             }
           }
-        },
-        datalabels: {
-          display: true,
-          anchor: 'end',
-          align: 'top'
         }
       },
       scales: {
+        x: {
+          grid: { display: false }
+        },
         y: {
           beginAtZero: true,
           max: 60,
-          grid: { display: false },
-          title: { display: true, text: "% of Revenue", font: { size: 14 } }
-        },
-        x: {
-          grid: { display: false },
-          ticks: { font: { size: 12 } }
+          title: {
+            display: true,
+            text: "% of Revenue"
+          },
+          grid: { display: false }
         }
       }
     },
@@ -130,40 +127,52 @@ function drawGroupedExpenseChart(data, filterCategory) {
   });
 }
 
-function drawSalesVsExpenseChart(data) {
-  const months = monthOrder;
-  const salesData = months.map(m => data.totalSalesPerMonth[m] || 0);
-  const expenseData = months.map(m => data.totalExpensesPerMonth[m] || 0);
+function drawSalesVsExpensesChart(data) {
+  const monthlySales = data.monthlySales || {};
+  const monthlyExpenses = data.monthlyExpenses || {};
+  const months = monthOrder.filter(m => monthlySales[m] || monthlyExpenses[m]);
 
   if (salesExpenseChart) salesExpenseChart.destroy();
 
-  salesExpenseChart = new Chart(ctxSales, {
+  salesExpenseChart = new Chart(ctxSalesVsExp, {
     type: 'bar',
     data: {
       labels: months.map(capitalize),
       datasets: [
-        { label: 'Sales', data: salesData, backgroundColor: '#007bff' },
-        { label: 'Expenses', data: expenseData, backgroundColor: '#dc3545' }
+        {
+          label: 'Sales',
+          data: months.map(m => monthlySales[m] || 0),
+          backgroundColor: '#007bff'
+        },
+        {
+          label: 'Expenses',
+          data: months.map(m => monthlyExpenses[m] || 0),
+          backgroundColor: '#dc3545'
+        }
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: "Monthly Sales vs Expenses", font: { size: 18 } },
+        title: {
+          display: true,
+          text: 'Monthly Sales vs Total Expenses',
+          font: { size: 16 }
+        },
         legend: { position: 'bottom' },
         tooltip: {
           callbacks: {
-            label: ctx => `${ctx.dataset.label}: ` + formatPeso(ctx.raw)
+            label: ctx => `${ctx.dataset.label}: ₱${Number(ctx.raw).toLocaleString()}`
           }
         }
       },
       scales: {
+        x: { grid: { display: false } },
         y: {
           beginAtZero: true,
-          grid: { display: false },
-          title: { display: true, text: "PHP" }
-        },
-        x: { grid: { display: false } }
+          title: { display: true, text: 'PHP Amount' },
+          grid: { display: true }
+        }
       }
     }
   });
