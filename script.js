@@ -1,4 +1,4 @@
-// script.js – Updated for cleaner grouped chart with category filter
+// script.js – Final cleanup for category filter & improved chart layout
 
 const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
 const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
@@ -42,7 +42,9 @@ function drawGroupedExpenseChart(data, filterCategory) {
   const targets = data.targets;
 
   const months = monthOrder.filter(m => monthly[m]);
-  const categories = filterCategory === "all" ? Object.keys(targets) : [filterCategory];
+  const allCategories = Object.keys(targets);
+  const categories = filterCategory === "all" ? allCategories : [filterCategory];
+
   const colors = {
     foodandbeveragespurchases: "#007bff",
     fixedexpense: "#28a745",
@@ -75,7 +77,9 @@ function drawGroupedExpenseChart(data, filterCategory) {
       borderWidth: 2,
       pointRadius: 0,
       fill: false,
-      yAxisID: 'y'
+      yAxisID: 'y',
+      label: '', // Removed label for dashed lines
+      datalabels: { display: false }
     };
   });
 
@@ -90,8 +94,8 @@ function drawGroupedExpenseChart(data, filterCategory) {
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: "Monthly Expenses as % of Revenue" },
-        legend: { display: true, position: 'bottom' },
+        title: { display: true, text: "Monthly Expenses as % of Revenue", font: { size: 18 } },
+        legend: { position: 'bottom', labels: { font: { size: 12 } } },
         tooltip: {
           callbacks: {
             label: function (ctx) {
@@ -112,11 +116,14 @@ function drawGroupedExpenseChart(data, filterCategory) {
       scales: {
         y: {
           beginAtZero: true,
-          max: 100,
+          max: 60,
           grid: { display: false },
-          title: { display: true, text: "% of Revenue" }
+          title: { display: true, text: "% of Revenue", font: { size: 14 } }
         },
-        x: { grid: { display: false } }
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 12 } }
+        }
       }
     },
     plugins: [ChartDataLabels]
@@ -142,7 +149,7 @@ function drawSalesVsExpenseChart(data) {
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: "Monthly Sales vs Expenses" },
+        title: { display: true, text: "Monthly Sales vs Expenses", font: { size: 18 } },
         legend: { position: 'bottom' },
         tooltip: {
           callbacks: {
