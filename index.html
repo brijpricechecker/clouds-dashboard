@@ -14,7 +14,7 @@
       gap: 10px;
       padding: 10px;
     }
-    .filters, .kpis, .pl-container {
+    .filters, .kpis {
       padding: 10px;
       background: #fff;
       margin-bottom: 10px;
@@ -37,76 +37,84 @@
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     td { padding: 8px; border-bottom: 1px solid #ddd; }
     h3 { margin-top: 20px; }
+    #plView { display: none; padding: 20px; }
+    #dashboardView { display: block; }
+    button { margin-top: 10px; }
   </style>
 </head>
 <body>
-  <div class="dashboard-grid">
-    <div>
-      <div class="filters">
-        <h4>Filters</h4>
-        <label>Year:
-          <select id="yearSelect">
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025" selected>2025</option>
-          </select>
-        </label><br>
-        <label>Month:
-          <select id="monthSelect">
-            <option value="all">All</option>
-            <option value="january">January</option>
-            <option value="february">February</option>
-            <option value="march">March</option>
-            <option value="april">April</option>
-            <option value="may">May</option>
-            <option value="june">June</option>
-            <option value="july">July</option>
-            <option value="august">August</option>
-            <option value="september">September</option>
-            <option value="october">October</option>
-            <option value="november">November</option>
-            <option value="december">December</option>
-          </select>
-        </label><br>
-        <label>Category:
-          <select id="categoryFilter">
-            <option value="all">All</option>
-            <option value="foodandbeveragespurchases">Food & Beverage</option>
-            <option value="fixedexpense">Fixed</option>
-            <option value="laborexpense">Labor</option>
-            <option value="operatingexpense">Operating</option>
-            <option value="misc">Misc</option>
-          </select>
-        </label>
-        <br><br>
-        <button id="showPLBtn">Show P&L</button>
-      </div>
+  <div id="dashboardView">
+    <div class="dashboard-grid">
+      <div>
+        <div class="filters">
+          <h4>Filters</h4>
+          <label>Year:
+            <select id="yearSelect">
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+              <option value="2025" selected>2025</option>
+            </select>
+          </label><br>
+          <label>Month:
+            <select id="monthSelect">
+              <option value="all">All</option>
+              <option value="january">January</option>
+              <option value="february">February</option>
+              <option value="march">March</option>
+              <option value="april">April</option>
+              <option value="may">May</option>
+              <option value="june">June</option>
+              <option value="july">July</option>
+              <option value="august">August</option>
+              <option value="september">September</option>
+              <option value="october">October</option>
+              <option value="november">November</option>
+              <option value="december">December</option>
+            </select>
+          </label><br>
+          <label>Category:
+            <select id="categoryFilter">
+              <option value="all">All</option>
+              <option value="foodandbeveragespurchases">Food & Beverage</option>
+              <option value="fixedexpense">Fixed</option>
+              <option value="laborexpense">Labor</option>
+              <option value="operatingexpense">Operating</option>
+              <option value="misc">Misc</option>
+            </select>
+          </label>
+          <br><br>
+          <button id="showPLBtn">Show P&L</button>
+        </div>
 
-      <div class="kpis">
-        <div class="kpi-boxes">
-          <div class="kpi">
-            <h5>Total Sales</h5>
-            <div id="salesKPI">₱0.00</div>
-          </div>
-          <div class="kpi">
-            <h5>Total Expenses</h5>
-            <div id="expensesKPI">₱0.00</div>
-          </div>
-          <div class="kpi">
-            <h5>Revenue</h5>
-            <div id="revenueKPI">₱0.00</div>
+        <div class="kpis">
+          <div class="kpi-boxes">
+            <div class="kpi">
+              <h5>Total Sales</h5>
+              <div id="salesKPI">₱0.00</div>
+            </div>
+            <div class="kpi">
+              <h5>Total Expenses</h5>
+              <div id="expensesKPI">₱0.00</div>
+            </div>
+            <div class="kpi">
+              <h5>Revenue</h5>
+              <div id="revenueKPI">₱0.00</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div id="plStatement" class="pl-container"></div>
+      <div>
+        <canvas id="grouped-expense-chart" height="280"></canvas>
+        <br>
+        <canvas id="monthly-sales-expense-chart" height="240"></canvas>
+      </div>
     </div>
+  </div>
 
-    <div>
-      <canvas id="grouped-expense-chart" height="280"></canvas>
-      <br>
-      <canvas id="monthly-sales-expense-chart" height="240"></canvas>
-    </div>
+  <div id="plView">
+    <button onclick="backToDashboard()">Back to Dashboard</button>
+    <div id="plStatement"></div>
   </div>
 
   <script src="script.js"></script>
