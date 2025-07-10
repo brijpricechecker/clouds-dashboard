@@ -80,12 +80,20 @@
       gap: 10px;
     }
 
-    canvas {
+    #grouped-expense-chart {
       background: #fff;
       border-radius: 12px;
       padding: 10px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      height: 48vh !important;
+      height: 65vh !important;
+    }
+
+    #sales-expense-chart {
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      height: 35vh !important;
     }
 
     #pnlView {
@@ -170,7 +178,7 @@
       </div>
 
       <div class="btn-group">
-        <button id="showPnlBtn">Show P&L</button>
+        <button id="showPnlBtn">Show P&amp;L</button>
         <button id="backBtn" style="display:none">Back to Dashboard</button>
         <button id="downloadBtn">Download PDF</button>
       </div>
@@ -180,7 +188,7 @@
       <canvas id="grouped-expense-chart"></canvas>
       <canvas id="sales-expense-chart"></canvas>
       <div id="pnlView">
-        <h3>P&L Statement</h3>
+        <h3>P&amp;L Statement</h3>
         <table id="pnlTable"></table>
       </div>
     </div>
