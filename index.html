@@ -6,6 +6,8 @@
   <title>Expense Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -137,6 +139,16 @@
     #pl-statement h2 {
       margin-top: 0;
     }
+
+    .download-btn {
+      background: #007bff;
+      color: white;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -178,6 +190,8 @@
         </select>
 
         <button id="togglePL">📊 Show P&L Statement</button>
+        <button class="download-btn" onclick="downloadDashboardPDF()">📥 Download KPI & Charts (PDF)</button>
+        <button class="download-btn" onclick="downloadPLPDF()">📥 Download P&L Statement (PDF)</button>
       </div>
 
       <div class="kpis">
@@ -205,7 +219,7 @@
       </div>
     </div>
 
-    <div class="main">
+    <div class="main" id="dashboard-main">
       <div>
         <h2>Monthly Expenses as % of Revenue</h2>
         <canvas id="grouped-expense-chart" height="220"></canvas>
@@ -233,12 +247,37 @@
       </div>
     </div>
   </div>
+
   <script src="script.js"></script>
   <script>
     document.getElementById("togglePL").addEventListener("click", () => {
       const pl = document.getElementById("pl-statement");
       pl.style.display = pl.style.display === "none" ? "block" : "none";
     });
+
+    async function downloadDashboardPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
+      const dashboard = document.getElementById('dashboard-main');
+      const canvas = await html2canvas(dashboard);
+      const imgData = canvas.toDataURL('image/png');
+      const width = doc.internal.pageSize.getWidth();
+      const height = (canvas.height * width) / canvas.width;
+      doc.addImage(imgData, 'PNG', 20, 20, width - 40, height);
+      doc.save("dashboard.pdf");
+    }
+
+    async function downloadPLPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const pl = document.getElementById('pl-statement');
+      const canvas = await html2canvas(pl);
+      const imgData = canvas.toDataURL('image/png');
+      const width = doc.internal.pageSize.getWidth();
+      const height = (canvas.height * width) / canvas.width;
+      doc.addImage(imgData, 'PNG', 10, 10, width - 20, height);
+      doc.save("profit-and-loss.pdf");
+    }
   </script>
 </body>
 </html>
