@@ -12,87 +12,98 @@ function fetchData() {
   const month = document.getElementById("monthSelect").value;
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
+// script.js
+
+const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
+const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
+
+let groupedChart, salesChart;
+
+const monthOrder = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december"
+];
+
+function fetchData() {
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+  const category = document.getElementById("categoryFilter").value;
+  const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
+
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      updateKPIs(data);
-      drawGroupedExpenseChart(data);
-      drawSalesExpenseChart(data);
-      generatePLTable(data.pl);
+      document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
+      document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
+      document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
+
+      drawGroupedExpenseChart(data, category);
+      drawSalesVsExpenseChart(data);
+      buildPnLTable(data.pnlData);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
 
-function updateKPIs(data) {
-  document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
-  document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
-}
-
-function drawGroupedExpenseChart(data) {
-  const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
+function drawGroupedExpenseChart(data, selectedCategory) {
   const monthly = data.monthlyCategoryTotals;
   const monthlySales = data.monthlySales;
   const targets = data.targets;
-  const selected = ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
-  const colors = ["#6ec1e4", "#94d2bd", "#f9c74f", "#f9844a", "#dabfff"];
 
   const months = monthOrder.filter(m => monthly[m]);
+  const categories = selectedCategory === 'all' ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"] : [selectedCategory];
+  const colors = ["#86c5ff", "#a0e0a9", "#ffe38d", "#92e3ea", "#bfa6ed"];
 
-  const datasets = selected.map((cat, i) => {
+  const datasets = categories.map((cat, i) => {
     return {
       label: categoryLabel(cat),
       data: months.map(m => {
-        const amt = monthly[m][cat] || 0;
-        const sales = monthlySales[m] || 1;
-        return (amt / sales) * 100;
+        const amt = (monthly[m] && monthly[m][cat]) || 0;
+        const sale = monthlySales[m] || 0;
+        return sale > 0 ? (amt / sale) * 100 : 0;
       }),
-      backgroundColor: colors[i],
+      backgroundColor: colors[i % colors.length],
       datalabels: {
+        color: '#000',
         anchor: 'end',
-        align: 'end',
-        color: '#333',
+        align: 'top',
         formatter: v => v.toFixed(1) + "%"
       }
-    }
+    };
   });
-
-  const targetLines = selected.map((cat, i) => ({
-    type: 'line',
-    data: Array(months.length).fill(targets[cat]),
-    borderColor: colors[i],
-    borderDash: [5, 5],
-    borderWidth: 1,
-    pointRadius: 0,
-    fill: false,
-    yAxisID: 'y',
-    datalabels: { display: false }
-  }));
 
   if (groupedChart) groupedChart.destroy();
 
-  groupedChart = new Chart(ctx, {
+  groupedChart = new Chart(ctxGrouped, {
     type: "bar",
     data: {
       labels: months.map(capitalize),
-      datasets: [...datasets, ...targetLines]
+      datasets: datasets
     },
     options: {
       responsive: true,
       plugins: {
-        datalabels: { display: true },
-        legend: { display: true, position: 'bottom' },
         title: {
           display: true,
-          text: "Monthly Expenses as % of Revenue"
+          text: "Monthly Expenses as % of Revenue",
+          font: { size: 16 }
+        },
+        legend: {
+          display: categories.length > 1,
+          position: 'bottom'
         },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
           }
+        },
+        datalabels: {
+          display: true
         }
       },
       scales: {
+        x: {
+          grid: { display: false }
+        },
         y: {
           beginAtZero: true,
           max: 60,
@@ -101,9 +112,6 @@ function drawGroupedExpenseChart(data) {
             text: "% of Revenue"
           },
           grid: { display: false }
-        },
-        x: {
-          grid: { display: false }
         }
       }
     },
@@ -111,79 +119,82 @@ function drawGroupedExpenseChart(data) {
   });
 }
 
-function drawSalesExpenseChart(data) {
-  const ctx = document.getElementById("sales-expense-chart").getContext("2d");
-  const monthlySales = data.monthlySales;
-  const monthlyExpenses = data.monthlyExpenses;
-  const months = monthOrder.filter(m => monthlySales[m]);
+function drawSalesVsExpenseChart(data) {
+  const months = monthOrder.filter(m => data.monthlySales[m] || data.monthlyExpenseTotals[m]);
+  const sales = months.map(m => data.monthlySales[m] || 0);
+  const expenses = months.map(m => data.monthlyExpenseTotals[m] || 0);
 
-  const salesData = months.map(m => monthlySales[m] || 0);
-  const expData = months.map(m => monthlyExpenses[m] || 0);
+  if (salesChart) salesChart.destroy();
 
-  if (salesExpenseChart) salesExpenseChart.destroy();
-
-  salesExpenseChart = new Chart(ctx, {
-    type: 'bar',
+  salesChart = new Chart(ctxSales, {
+    type: "bar",
     data: {
       labels: months.map(capitalize),
       datasets: [
         {
-          label: 'Sales',
-          data: salesData,
-          backgroundColor: '#a1cfff'
+          label: "Sales",
+          data: sales,
+          backgroundColor: "#4caf50"
         },
         {
-          label: 'Expenses',
-          data: expData,
-          backgroundColor: '#ffc6c6'
+          label: "Expenses",
+          data: expenses,
+          backgroundColor: "#f44336"
         }
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { position: 'bottom' },
         title: {
           display: true,
-          text: 'Monthly Sales vs Expenses'
-        }
+          text: "Sales vs Expenses"
+        },
+        legend: { position: 'bottom' }
       },
       scales: {
+        x: { stacked: false },
         y: {
           beginAtZero: true,
-          grid: { display: false }
-        },
-        x: {
-          grid: { display: false }
+          title: {
+            display: true,
+            text: "Amount (₱)"
+          }
         }
       }
     }
   });
 }
 
-function generatePLTable(pl) {
-  const months = monthOrder.filter(m => pl.monthly[m]);
-  const div = document.getElementById("plTable");
-  let html = `<table><thead><tr><th>Item</th><th>Total</th>`;
-  months.forEach(m => html += `<th>${capitalize(m)}</th>`);
-  html += `</tr></thead><tbody>`;
+function buildPnLTable(pnlData) {
+  const table = document.getElementById("pnlTable");
+  table.innerHTML = "";
+  if (!pnlData || pnlData.length === 0) return;
 
-  const rows = ["Sales", "Expenses", "Net"];
-  rows.forEach(row => {
-    html += `<tr><td>${row}</td><td>${formatPeso(pl.total[row])}</td>`;
-    months.forEach(m => html += `<td>${formatPeso(pl.monthly[m][row])}</td>`);
-    html += `</tr>`;
+  const headers = Object.keys(pnlData[0]);
+  const thead = document.createElement("thead");
+  const tbody = document.createElement("tbody");
+
+  const trHead = document.createElement("tr");
+  headers.forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = capitalize(h);
+    trHead.appendChild(th);
+  });
+  thead.appendChild(trHead);
+
+  pnlData.forEach(row => {
+    const tr = document.createElement("tr");
+    headers.forEach(h => {
+      const td = document.createElement("td");
+      td.textContent = typeof row[h] === 'number' ? formatPeso(row[h]) : row[h];
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
   });
 
-  html += `</tbody></table>`;
-  div.innerHTML = html;
-}
-
-function togglePL() {
-  const pl = document.getElementById("plSection");
-  const dash = document.getElementById("dashboard");
-  pl.classList.toggle("hidden");
-  dash.classList.toggle("hidden");
+  table.appendChild(thead);
+  table.appendChild(tbody);
 }
 
 function capitalize(str) {
@@ -205,19 +216,37 @@ function formatPeso(num) {
   return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const yearSel = document.getElementById("yearSelect");
-  const now = new Date();
-  for (let y = now.getFullYear(); y >= 2022; y--) {
-    const opt = document.createElement("option");
-    opt.value = y;
-    opt.textContent = y;
-    yearSel.appendChild(opt);
-  }
-  yearSel.value = now.getFullYear();
-  document.getElementById("monthSelect").value = "all";
+function downloadPDF() {
+  const doc = new jspdf.jsPDF('p', 'pt', 'a4');
+  html2canvas(document.querySelector(".charts")).then(canvas => {
+    const imgData = canvas.toDataURL("image/png");
+    const imgProps = doc.getImageProperties(imgData);
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    doc.save("dashboard.pdf");
+  });
+}
 
-  yearSel.addEventListener("change", fetchData);
-  document.getElementById("monthSelect").addEventListener("change", fetchData);
+// Event Listeners
+
+document.addEventListener("DOMContentLoaded", () => {
   fetchData();
+  document.getElementById("yearSelect").addEventListener("change", fetchData);
+  document.getElementById("monthSelect").addEventListener("change", fetchData);
+  document.getElementById("categoryFilter").addEventListener("change", fetchData);
+  document.getElementById("downloadBtn").addEventListener("click", downloadPDF);
+
+  document.getElementById("showPnlBtn").addEventListener("click", () => {
+    document.querySelector(".charts").style.display = "none";
+    document.getElementById("pnlView").style.display = "block";
+    document.getElementById("backBtn").style.display = "block";
+  });
+
+  document.getElementById("backBtn").addEventListener("click", () => {
+    document.querySelector(".charts").style.display = "flex";
+    document.getElementById("pnlView").style.display = "none";
+    document.getElementById("backBtn").style.display = "none";
+  });
 });
+
