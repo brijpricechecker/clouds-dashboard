@@ -12,21 +12,22 @@ function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value.toLowerCase();
   const category = document.getElementById("categoryFilter").value;
-
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
-      document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
-      document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
+      if (!data || !data.monthlySales) return;
+
+      document.getElementById("salesKPI").textContent = formatPeso(data.totalSales || 0);
+      document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses || 0);
+      document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue || 0);
 
       drawGroupedExpenseChart(data, category);
       drawSalesVsExpenseChart(data);
-      buildPnLTable(data.pnlData);
+      buildPnLTable(data.pnlData || []);
     })
-    .catch(err => console.error("Fetch Error:", err));
+    .catch(err => console.error("Error fetching data:", err));
 }
 
 function drawGroupedExpenseChart(data, selectedCategory) {
@@ -38,21 +39,21 @@ function drawGroupedExpenseChart(data, selectedCategory) {
     ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"]
     : [selectedCategory];
 
-  const colors = ["#86c5ff", "#a0e0a9", "#ffe38d", "#92e3ea", "#bfa6ed"];
+  const colors = ["#b3e5fc", "#c8e6c9", "#fff9c4", "#d1c4e9", "#f8bbd0"];
 
   const datasets = categories.map((cat, i) => ({
     label: categoryLabel(cat),
     data: months.map(m => {
       const amt = (monthly[m] && monthly[m][cat]) || 0;
-      const sale = monthlySales[m] || 1;
-      return (amt / sale) * 100;
+      const sale = monthlySales[m] || 0;
+      return sale > 0 ? (amt / sale) * 100 : 0;
     }),
     backgroundColor: colors[i % colors.length],
     datalabels: {
+      color: '#000',
       anchor: 'end',
       align: 'top',
-      formatter: v => v.toFixed(1) + '%',
-      color: '#333'
+      formatter: v => v.toFixed(1) + "%"
     }
   }));
 
@@ -66,6 +67,7 @@ function drawGroupedExpenseChart(data, selectedCategory) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         title: {
           display: true,
@@ -86,7 +88,9 @@ function drawGroupedExpenseChart(data, selectedCategory) {
         }
       },
       scales: {
-        x: { grid: { display: false } },
+        x: {
+          grid: { display: false }
+        },
         y: {
           beginAtZero: true,
           max: 60,
@@ -117,17 +121,18 @@ function drawSalesVsExpenseChart(data) {
         {
           label: "Sales",
           data: sales,
-          backgroundColor: "#4caf50"
+          backgroundColor: "#81c784"
         },
         {
           label: "Expenses",
           data: expenses,
-          backgroundColor: "#f44336"
+          backgroundColor: "#ef9a9a"
         }
       ]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         title: {
           display: true,
@@ -196,10 +201,7 @@ function categoryLabel(key) {
 }
 
 function formatPeso(num) {
-  return Number(num).toLocaleString("en-PH", {
-    style: 'currency',
-    currency: 'PHP'
-  });
+  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
 
 function downloadPDF() {
@@ -214,7 +216,18 @@ function downloadPDF() {
   });
 }
 
+// Event Listeners
+
 document.addEventListener("DOMContentLoaded", () => {
+  // Default year to latest year
+  const yearSelect = document.getElementById("yearSelect");
+  if (yearSelect) {
+    const currentYear = new Date().getFullYear();
+    [...yearSelect.options].forEach(option => {
+      option.selected = option.value == currentYear;
+    });
+  }
+
   fetchData();
   document.getElementById("yearSelect").addEventListener("change", fetchData);
   document.getElementById("monthSelect").addEventListener("change", fetchData);
@@ -233,4 +246,3 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("backBtn").style.display = "none";
   });
 });
-
