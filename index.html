@@ -17,7 +17,7 @@
 
     .container {
       display: grid;
-      grid-template-columns: 30% 70%;
+      grid-template-columns: 22% 78%;
       gap: 1rem;
       padding: 1rem;
       height: 100vh;
@@ -43,7 +43,8 @@
       font-weight: 500;
     }
 
-    .filters select {
+    .filters select,
+    .filters button {
       width: 100%;
       padding: 0.5rem;
       font-size: 1rem;
@@ -107,6 +108,35 @@
       margin-bottom: 0.5rem;
       color: #444;
     }
+
+    #pl-statement {
+      display: none;
+      background-color: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    #pl-statement table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #pl-statement th,
+    #pl-statement td {
+      text-align: right;
+      padding: 0.5rem;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #pl-statement th:first-child,
+    #pl-statement td:first-child {
+      text-align: left;
+    }
+
+    #pl-statement h2 {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
@@ -146,6 +176,8 @@
           <option value="operatingexpense">Operating</option>
           <option value="misc">Misc</option>
         </select>
+
+        <button id="togglePL">📊 Show P&L Statement</button>
       </div>
 
       <div class="kpis">
@@ -183,8 +215,30 @@
         <h2>Monthly Total Sales vs Total Expenses</h2>
         <canvas id="sales-expense-chart" height="220"></canvas>
       </div>
+
+      <div id="pl-statement">
+        <h2>Profit & Loss Statement</h2>
+        <table>
+          <tbody>
+            <tr><td>Total Sales</td><td id="pl-sales">₱0</td></tr>
+            <tr><td>Cost of Goods Sold</td><td id="pl-cogs">₱0</td></tr>
+            <tr><th>Gross Profit</th><th id="pl-gross">₱0</th></tr>
+            <tr><td>Operating Expenses</td><td id="pl-opex">₱0</td></tr>
+            <tr><td>Fixed Expenses</td><td id="pl-fixed">₱0</td></tr>
+            <tr><td>Labor Expenses</td><td id="pl-labor">₱0</td></tr>
+            <tr><td>Miscellaneous</td><td id="pl-misc">₱0</td></tr>
+            <tr><th>Net Profit</th><th id="pl-net">₱0</th></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
   <script src="script.js"></script>
+  <script>
+    document.getElementById("togglePL").addEventListener("click", () => {
+      const pl = document.getElementById("pl-statement");
+      pl.style.display = pl.style.display === "none" ? "block" : "none";
+    });
+  </script>
 </body>
 </html>
