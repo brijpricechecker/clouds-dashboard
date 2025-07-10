@@ -1,5 +1,3 @@
-// script.js
-
 const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
 const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
 
@@ -12,8 +10,9 @@ const monthOrder = [
 
 function fetchData() {
   const year = document.getElementById("yearSelect").value;
-  const month = document.getElementById("monthSelect").value;
+  const month = document.getElementById("monthSelect").value.toLowerCase();
   const category = document.getElementById("categoryFilter").value;
+
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -27,35 +26,35 @@ function fetchData() {
       drawSalesVsExpenseChart(data);
       buildPnLTable(data.pnlData);
     })
-    .catch(err => console.error("Error fetching data:", err));
+    .catch(err => console.error("Fetch Error:", err));
 }
 
 function drawGroupedExpenseChart(data, selectedCategory) {
   const monthly = data.monthlyCategoryTotals;
   const monthlySales = data.monthlySales;
-  const targets = data.targets;
 
   const months = monthOrder.filter(m => monthly[m]);
-  const categories = selectedCategory === 'all' ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"] : [selectedCategory];
+  const categories = selectedCategory === 'all'
+    ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"]
+    : [selectedCategory];
+
   const colors = ["#86c5ff", "#a0e0a9", "#ffe38d", "#92e3ea", "#bfa6ed"];
 
-  const datasets = categories.map((cat, i) => {
-    return {
-      label: categoryLabel(cat),
-      data: months.map(m => {
-        const amt = (monthly[m] && monthly[m][cat]) || 0;
-        const sale = monthlySales[m] || 0;
-        return sale > 0 ? (amt / sale) * 100 : 0;
-      }),
-      backgroundColor: colors[i % colors.length],
-      datalabels: {
-        color: '#000',
-        anchor: 'end',
-        align: 'top',
-        formatter: v => v.toFixed(1) + "%"
-      }
-    };
-  });
+  const datasets = categories.map((cat, i) => ({
+    label: categoryLabel(cat),
+    data: months.map(m => {
+      const amt = (monthly[m] && monthly[m][cat]) || 0;
+      const sale = monthlySales[m] || 1;
+      return (amt / sale) * 100;
+    }),
+    backgroundColor: colors[i % colors.length],
+    datalabels: {
+      anchor: 'end',
+      align: 'top',
+      formatter: v => v.toFixed(1) + '%',
+      color: '#333'
+    }
+  }));
 
   if (groupedChart) groupedChart.destroy();
 
@@ -77,19 +76,17 @@ function drawGroupedExpenseChart(data, selectedCategory) {
           display: categories.length > 1,
           position: 'bottom'
         },
+        datalabels: {
+          display: true
+        },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
           }
-        },
-        datalabels: {
-          display: true
         }
       },
       scales: {
-        x: {
-          grid: { display: false }
-        },
+        x: { grid: { display: false } },
         y: {
           beginAtZero: true,
           max: 60,
@@ -199,7 +196,10 @@ function categoryLabel(key) {
 }
 
 function formatPeso(num) {
-  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+  return Number(num).toLocaleString("en-PH", {
+    style: 'currency',
+    currency: 'PHP'
+  });
 }
 
 function downloadPDF() {
@@ -213,8 +213,6 @@ function downloadPDF() {
     doc.save("dashboard.pdf");
   });
 }
-
-// Event Listeners
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchData();
