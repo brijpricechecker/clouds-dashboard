@@ -1,17 +1,3 @@
-// script.js – full dashboard logic with P&L toggle and clean layout
-
-const monthOrder = [
-  "january", "february", "march", "april", "may", "june",
-  "july", "august", "september", "october", "november", "december"
-];
-
-let groupedChart, salesExpenseChart;
-
-function fetchData() {
-  const year = document.getElementById("yearSelect").value;
-  const month = document.getElementById("monthSelect").value;
-  const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
-
 // script.js
 
 const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
