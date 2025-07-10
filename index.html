@@ -1,105 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Business Dashboard</title>
+  <title>Expense Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #f9f9f9;
+      background: #f7f9fc;
+      color: #333;
     }
+
     .container {
       display: grid;
-      grid-template-columns: 25% 75%;
+      grid-template-columns: 22% 78%;
       gap: 10px;
+      padding: 10px;
       height: 100vh;
     }
-    .sidebar {
-      padding: 10px;
+
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .filter-group,
+    .kpi-boxes,
+    .btn-group {
       background: #fff;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      border-right: 1px solid #ccc;
-    }
-    .content {
+      border-radius: 12px;
       padding: 10px;
-      overflow-y: auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
-    .filters label, .filters select, .filters button {
-      font-size: 14px;
-      margin: 5px 0;
+
+    .filter-group label,
+    .btn-group button {
+      font-weight: 600;
     }
-    .kpis {
+
+    select,
+    button {
+      margin-top: 5px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+    }
+
+    .kpi-boxes {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
+
     .kpi {
-      background: #eef3f7;
-      padding: 12px;
+      background: #eef4f8;
       border-radius: 8px;
+      padding: 10px;
       text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .kpi h3 {
-      margin: 0;
-      font-size: 14px;
-      color: #444;
-    }
-    .kpi p {
-      margin: 5px 0 0;
-      font-weight: bold;
+
+    .kpi strong {
+      display: block;
       font-size: 16px;
     }
+
+    .charts {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
     canvas {
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       height: 48vh !important;
     }
-    .hidden {
+
+    #pnlView {
       display: none;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      overflow: auto;
     }
-    .btn {
-      padding: 6px 10px;
-      font-size: 14px;
-      border: none;
-      background: #007bff;
-      color: #fff;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background: #0056b3;
-    }
-    table {
+
+    #pnlTable {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
     }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px;
-      font-size: 13px;
+
+    #pnlTable th,
+    #pnlTable td {
+      border: 1px solid #ccc;
+      padding: 8px;
       text-align: right;
     }
-    th {
-      background: #eef3f7;
-    }
-    #plSection {
-      margin-top: 10px;
+
+    #pnlTable th {
+      background: #e3f2fd;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <div class="sidebar">
-      <div class="filters">
+    <div class="left-panel">
+      <div class="filter-group">
         <label for="yearSelect">Year:</label>
-        <select id="yearSelect"></select>
+        <select id="yearSelect">
+          <option value="2023">2023</option>
+          <option value="2024">2024</option>
+          <option value="2025" selected>2025</option>
+        </select>
+
         <label for="monthSelect">Month:</label>
         <select id="monthSelect">
           <option value="all">All</option>
@@ -116,36 +142,51 @@
           <option value="november">November</option>
           <option value="december">December</option>
         </select>
-        <button class="btn" onclick="togglePL()">Show P&L</button>
-        <button class="btn" onclick="downloadPDF()">Download PDF</button>
+
+        <label for="categoryFilter">Category:</label>
+        <select id="categoryFilter">
+          <option value="all">All</option>
+          <option value="foodandbeveragespurchases">Food & Beverage</option>
+          <option value="fixedexpense">Fixed</option>
+          <option value="laborexpense">Labor</option>
+          <option value="operatingexpense">Operating</option>
+          <option value="misc">Misc</option>
+        </select>
       </div>
-      <div class="kpis">
+
+      <div class="kpi-boxes">
         <div class="kpi">
-          <h3>Total Sales</h3>
-          <p id="salesKPI">₱0</p>
+          <strong>Total Sales</strong>
+          <span id="salesKPI">₱0.00</span>
         </div>
         <div class="kpi">
-          <h3>Total Expenses</h3>
-          <p id="expensesKPI">₱0</p>
+          <strong>Total Expenses</strong>
+          <span id="expensesKPI">₱0.00</span>
         </div>
         <div class="kpi">
-          <h3>Total Revenue</h3>
-          <p id="revenueKPI">₱0</p>
+          <strong>Total Revenue</strong>
+          <span id="revenueKPI">₱0.00</span>
         </div>
+      </div>
+
+      <div class="btn-group">
+        <button id="showPnlBtn">Show P&L</button>
+        <button id="backBtn" style="display:none">Back to Dashboard</button>
+        <button id="downloadBtn">Download PDF</button>
       </div>
     </div>
-    <div class="content">
-      <div id="dashboard">
-        <canvas id="grouped-expense-chart"></canvas>
-        <canvas id="sales-expense-chart"></canvas>
-      </div>
-      <div id="plSection" class="hidden">
-        <h3>Profit & Loss Statement</h3>
-        <div id="plTable"></div>
-        <button class="btn" onclick="togglePL()">Back to Dashboard</button>
+
+    <div class="charts">
+      <canvas id="grouped-expense-chart"></canvas>
+      <canvas id="sales-expense-chart"></canvas>
+      <div id="pnlView">
+        <h3>P&L Statement</h3>
+        <table id="pnlTable"></table>
       </div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
+
 </html>
