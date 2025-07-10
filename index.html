@@ -1,122 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expense Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 22% 78%;
-      gap: 10px;
-      padding: 10px;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
     }
-    .filters, .kpis {
+    .container {
+      display: grid;
+      grid-template-columns: 25% 75%;
+      gap: 10px;
+      height: 100vh;
+    }
+    .sidebar {
       padding: 10px;
       background: #fff;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .kpi-boxes {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      gap: 10px;
+      border-right: 1px solid #ccc;
+    }
+    .content {
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .filters label, .filters select, .filters button {
+      font-size: 14px;
+      margin: 5px 0;
+    }
+    .kpis {
+      display: flex;
+      flex-direction: column;
       gap: 10px;
     }
     .kpi {
-      flex: 1;
-      background: #e9ecef;
-      padding: 10px;
+      background: #eef3f7;
+      padding: 12px;
       border-radius: 8px;
       text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    canvas { background: #fff; border-radius: 8px; padding: 10px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    td { padding: 8px; border-bottom: 1px solid #ddd; }
-    h3 { margin-top: 20px; }
-    #plView { display: none; padding: 20px; }
-    #dashboardView { display: block; }
-    button { margin-top: 10px; }
+    .kpi h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #444;
+    }
+    .kpi p {
+      margin: 5px 0 0;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    canvas {
+      height: 48vh !important;
+    }
+    .hidden {
+      display: none;
+    }
+    .btn {
+      padding: 6px 10px;
+      font-size: 14px;
+      border: none;
+      background: #007bff;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      font-size: 13px;
+      text-align: right;
+    }
+    th {
+      background: #eef3f7;
+    }
+    #plSection {
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <div id="dashboardView">
-    <div class="dashboard-grid">
-      <div>
-        <div class="filters">
-          <h4>Filters</h4>
-          <label>Year:
-            <select id="yearSelect">
-              <option value="2023">2023</option>
-              <option value="2024">2024</option>
-              <option value="2025" selected>2025</option>
-            </select>
-          </label><br>
-          <label>Month:
-            <select id="monthSelect">
-              <option value="all">All</option>
-              <option value="january">January</option>
-              <option value="february">February</option>
-              <option value="march">March</option>
-              <option value="april">April</option>
-              <option value="may">May</option>
-              <option value="june">June</option>
-              <option value="july">July</option>
-              <option value="august">August</option>
-              <option value="september">September</option>
-              <option value="october">October</option>
-              <option value="november">November</option>
-              <option value="december">December</option>
-            </select>
-          </label><br>
-          <label>Category:
-            <select id="categoryFilter">
-              <option value="all">All</option>
-              <option value="foodandbeveragespurchases">Food & Beverage</option>
-              <option value="fixedexpense">Fixed</option>
-              <option value="laborexpense">Labor</option>
-              <option value="operatingexpense">Operating</option>
-              <option value="misc">Misc</option>
-            </select>
-          </label>
-          <br><br>
-          <button id="showPLBtn">Show P&L</button>
+  <div class="container">
+    <div class="sidebar">
+      <div class="filters">
+        <label for="yearSelect">Year:</label>
+        <select id="yearSelect"></select>
+        <label for="monthSelect">Month:</label>
+        <select id="monthSelect">
+          <option value="all">All</option>
+          <option value="january">January</option>
+          <option value="february">February</option>
+          <option value="march">March</option>
+          <option value="april">April</option>
+          <option value="may">May</option>
+          <option value="june">June</option>
+          <option value="july">July</option>
+          <option value="august">August</option>
+          <option value="september">September</option>
+          <option value="october">October</option>
+          <option value="november">November</option>
+          <option value="december">December</option>
+        </select>
+        <button class="btn" onclick="togglePL()">Show P&L</button>
+        <button class="btn" onclick="downloadPDF()">Download PDF</button>
+      </div>
+      <div class="kpis">
+        <div class="kpi">
+          <h3>Total Sales</h3>
+          <p id="salesKPI">₱0</p>
         </div>
-
-        <div class="kpis">
-          <div class="kpi-boxes">
-            <div class="kpi">
-              <h5>Total Sales</h5>
-              <div id="salesKPI">₱0.00</div>
-            </div>
-            <div class="kpi">
-              <h5>Total Expenses</h5>
-              <div id="expensesKPI">₱0.00</div>
-            </div>
-            <div class="kpi">
-              <h5>Revenue</h5>
-              <div id="revenueKPI">₱0.00</div>
-            </div>
-          </div>
+        <div class="kpi">
+          <h3>Total Expenses</h3>
+          <p id="expensesKPI">₱0</p>
+        </div>
+        <div class="kpi">
+          <h3>Total Revenue</h3>
+          <p id="revenueKPI">₱0</p>
         </div>
       </div>
-
-      <div>
-        <canvas id="grouped-expense-chart" height="280"></canvas>
-        <br>
-        <canvas id="monthly-sales-expense-chart" height="240"></canvas>
+    </div>
+    <div class="content">
+      <div id="dashboard">
+        <canvas id="grouped-expense-chart"></canvas>
+        <canvas id="sales-expense-chart"></canvas>
+      </div>
+      <div id="plSection" class="hidden">
+        <h3>Profit & Loss Statement</h3>
+        <div id="plTable"></div>
+        <button class="btn" onclick="togglePL()">Back to Dashboard</button>
       </div>
     </div>
   </div>
-
-  <div id="plView">
-    <button onclick="backToDashboard()">Back to Dashboard</button>
-    <div id="plStatement"></div>
-  </div>
-
   <script src="script.js"></script>
 </body>
 </html>
