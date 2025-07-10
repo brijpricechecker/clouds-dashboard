@@ -1,200 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
+  <title>Business Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Expense Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background: #f7f9fc;
-      color: #333;
+      background: #f4f6f9;
     }
-
     .container {
-      display: grid;
-      grid-template-columns: 22% 78%;
-      gap: 10px;
-      padding: 10px;
+      display: flex;
       height: 100vh;
     }
-
-    .left-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .sidebar {
+      width: 22%;
+      padding: 20px;
+      background: #ffffff;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
     }
-
-    .filter-group,
-    .kpi-boxes,
-    .btn-group {
-      background: #fff;
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    .content {
+      width: 78%;
+      padding: 20px;
+      overflow-y: auto;
     }
-
-    .filter-group label,
-    .btn-group button {
-      font-weight: 600;
-    }
-
-    select,
-    button {
-      margin-top: 5px;
-      padding: 6px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+    .filters select, .filters button {
       width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
     }
-
-    .kpi-boxes {
+    .kpis {
       display: flex;
       flex-direction: column;
       gap: 10px;
+      margin-top: 20px;
     }
-
     .kpi {
-      background: #eef4f8;
-      border-radius: 8px;
+      background: #e3f2fd;
       padding: 10px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
       text-align: center;
     }
-
-    .kpi strong {
-      display: block;
-      font-size: 16px;
-    }
-
     .charts {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 20px;
     }
-
-    #grouped-expense-chart {
+    canvas {
       background: #fff;
-      border-radius: 12px;
+      border-radius: 8px;
       padding: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      height: 65vh !important;
     }
-
-    #sales-expense-chart {
-      background: #fff;
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      height: 35vh !important;
-    }
-
     #pnlView {
       display: none;
-      padding: 20px;
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      overflow: auto;
+      padding: 20px;
+      border-radius: 10px;
     }
-
-    #pnlTable {
+    table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 20px;
     }
-
-    #pnlTable th,
-    #pnlTable td {
+    table th, table td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: right;
     }
-
-    #pnlTable th {
-      background: #e3f2fd;
+    table th {
+      background: #f0f0f0;
+      text-align: center;
+    }
+    #backBtn {
+      display: none;
+      margin-top: 10px;
+      padding: 8px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
-
 <body>
   <div class="container">
-    <div class="left-panel">
-      <div class="filter-group">
+    <div class="sidebar">
+      <div class="filters">
         <label for="yearSelect">Year:</label>
         <select id="yearSelect">
-          <option value="2023">2023</option>
-          <option value="2024">2024</option>
-          <option value="2025" selected>2025</option>
+          <option>2023</option>
+          <option selected>2024</option>
+          <option>2025</option>
         </select>
 
         <label for="monthSelect">Month:</label>
         <select id="monthSelect">
           <option value="all">All</option>
-          <option value="january">January</option>
-          <option value="february">February</option>
-          <option value="march">March</option>
-          <option value="april">April</option>
-          <option value="may">May</option>
-          <option value="june">June</option>
-          <option value="july">July</option>
-          <option value="august">August</option>
-          <option value="september">September</option>
-          <option value="october">October</option>
-          <option value="november">November</option>
-          <option value="december">December</option>
+          <option>January</option>
+          <option>February</option>
+          <option>March</option>
+          <option>April</option>
+          <option>May</option>
+          <option>June</option>
+          <option>July</option>
+          <option>August</option>
+          <option>September</option>
+          <option>October</option>
+          <option>November</option>
+          <option>December</option>
         </select>
 
-        <label for="categoryFilter">Category:</label>
+        <label for="categoryFilter">Major Category:</label>
         <select id="categoryFilter">
-          <option value="all">All</option>
+          <option value="all" selected>All</option>
           <option value="foodandbeveragespurchases">Food & Beverage</option>
           <option value="fixedexpense">Fixed</option>
           <option value="laborexpense">Labor</option>
           <option value="operatingexpense">Operating</option>
           <option value="misc">Misc</option>
         </select>
-      </div>
 
-      <div class="kpi-boxes">
-        <div class="kpi">
-          <strong>Total Sales</strong>
-          <span id="salesKPI">₱0.00</span>
-        </div>
-        <div class="kpi">
-          <strong>Total Expenses</strong>
-          <span id="expensesKPI">₱0.00</span>
-        </div>
-        <div class="kpi">
-          <strong>Total Revenue</strong>
-          <span id="revenueKPI">₱0.00</span>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button id="showPnlBtn">Show P&amp;L</button>
-        <button id="backBtn" style="display:none">Back to Dashboard</button>
+        <button id="showPnlBtn">Show P&L</button>
         <button id="downloadBtn">Download PDF</button>
+        <button id="backBtn">← Back to Dashboard</button>
       </div>
-    </div>
 
-    <div class="charts">
-      <canvas id="grouped-expense-chart"></canvas>
-      <canvas id="sales-expense-chart"></canvas>
-      <div id="pnlView">
-        <h3>P&amp;L Statement</h3>
-        <table id="pnlTable"></table>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
-
-</html>
+      <div class="kpis">
+        <div clas
