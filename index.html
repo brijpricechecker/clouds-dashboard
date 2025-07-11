@@ -10,7 +10,6 @@
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
-      padding: 0;
       background: #f4f6f9;
     }
     .container {
@@ -47,6 +46,21 @@
       font-weight: bold;
       text-align: center;
     }
+    .nav-buttons {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .nav-buttons button {
+      padding: 10px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #007bff;
+      color: #fff;
+    }
     .charts {
       display: flex;
       flex-direction: column;
@@ -58,36 +72,25 @@
       padding: 10px;
       height: 360px !important;
     }
-    #plTable, #summaryTable {
+    table {
+      width: 100%;
       margin-top: 30px;
       background: #fff;
       padding: 20px;
       border-radius: 10px;
-      width: 100%;
       border-collapse: collapse;
     }
-    #plTable th, #plTable td, #summaryTable th, #summaryTable td {
+    th, td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: right;
     }
-    #plTable th, #summaryTable th {
+    th {
       background: #f0f0f0;
       text-align: center;
     }
-    #summaryTable {
+    #plSection, #summarySection {
       display: none;
-    }
-    #showSummaryBtn {
-      margin-top: 20px;
-      width: 100%;
-      padding: 10px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
     }
   </style>
 </head>
@@ -128,8 +131,6 @@
           <option value="operatingexpense">Operating</option>
           <option value="misc">Misc</option>
         </select>
-
-        <button id="showSummaryBtn">Show Summary</button>
       </div>
 
       <div class="kpis">
@@ -137,16 +138,34 @@
         <div class="kpi">Expenses: <span id="expensesKPI">₱0.00</span></div>
         <div class="kpi">Net Revenue: <span id="revenueKPI">₱0.00</span></div>
       </div>
+
+      <div class="nav-buttons">
+        <button id="btnDashboard">Dashboard</button>
+        <button id="btnPL">P&L Statement</button>
+        <button id="btnSummary">Show Summary</button>
+      </div>
     </div>
 
     <div class="content">
-      <div class="charts">
-        <canvas id="grouped-expense-chart"></canvas>
-        <canvas id="sales-expense-chart"></canvas>
+      <!-- Dashboard Section -->
+      <div id="dashboard">
+        <div class="charts">
+          <canvas id="grouped-expense-chart"></canvas>
+          <canvas id="sales-expense-chart"></canvas>
+        </div>
       </div>
 
-      <table id="plTable"></table>
-      <table id="summaryTable"></table>
+      <!-- P&L Section -->
+      <div id="plSection">
+        <h2>P&L Statement</h2>
+        <table id="plTable"></table>
+      </div>
+
+      <!-- Summary Section -->
+      <div id="summarySection">
+        <h2>Minor Categories Summary</h2>
+        <table id="summaryTable"></table>
+      </div>
     </div>
   </div>
 
