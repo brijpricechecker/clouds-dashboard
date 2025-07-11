@@ -1,6 +1,5 @@
 const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
 const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
-
 let groupedChart, salesChart;
 
 const monthOrder = [
@@ -26,9 +25,9 @@ function fetchData() {
 }
 
 function updateKPIs(data) {
-  document.getElementById("salesKPI").textContent = "Sales: " + formatPeso(data.totalSales);
-  document.getElementById("expensesKPI").textContent = "Expenses: " + formatPeso(data.totalExpenses);
-  document.getElementById("revenueKPI").textContent = "Revenue: " + formatPeso(data.totalRevenue);
+  document.getElementById("salesKPI").textContent = `Sales: ${formatPeso(data.totalSales)}`;
+  document.getElementById("expensesKPI").textContent = `Expenses: ${formatPeso(data.totalExpenses)}`;
+  document.getElementById("revenueKPI").textContent = `Revenue: ${formatPeso(data.totalRevenue)}`;
 }
 
 function drawGroupedExpenseChart(data, selectedCategory) {
@@ -38,19 +37,25 @@ function drawGroupedExpenseChart(data, selectedCategory) {
 
   const months = monthOrder.filter(m => monthly[m]);
   const categories = selectedCategory === 'all'
-    ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"]
+    ? ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"]
     : [selectedCategory];
 
-  const colors = ["#86c5ff", "#a0e0a9", "#ffe38d", "#92e3ea", "#bfa6ed"];
+  const colors = {
+    cogs: "#007bff",
+    fixedexpense: "#28a745",
+    laborexpense: "#ffc107",
+    operatingexpense: "#17a2b8",
+    misc: "#6f42c1"
+  };
 
-  const datasets = categories.map((cat, i) => ({
+  const datasets = categories.map(cat => ({
     label: categoryLabel(cat),
     data: months.map(m => {
       const amt = (monthly[m] && monthly[m][cat]) || 0;
       const sale = monthlySales[m] || 0;
       return sale > 0 ? (amt / sale) * 100 : 0;
     }),
-    backgroundColor: colors[i % colors.length],
+    backgroundColor: colors[cat],
     datalabels: {
       color: '#000',
       anchor: 'end',
@@ -75,10 +80,7 @@ function drawGroupedExpenseChart(data, selectedCategory) {
           text: "Monthly Expenses as % of Revenue",
           font: { size: 16 }
         },
-        legend: {
-          display: categories.length > 1,
-          position: 'bottom'
-        },
+        legend: { position: 'bottom' },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
@@ -93,10 +95,7 @@ function drawGroupedExpenseChart(data, selectedCategory) {
         y: {
           beginAtZero: true,
           max: 60,
-          title: {
-            display: true,
-            text: "% of Revenue"
-          },
+          title: { display: true, text: "% of Revenue" },
           grid: { display: false }
         }
       }
@@ -117,35 +116,21 @@ function drawSalesVsExpenseChart(data) {
     data: {
       labels: months.map(capitalize),
       datasets: [
-        {
-          label: "Sales",
-          data: sales,
-          backgroundColor: "#4caf50"
-        },
-        {
-          label: "Expenses",
-          data: expenses,
-          backgroundColor: "#f44336"
-        }
+        { label: "Sales", data: sales, backgroundColor: "#4caf50" },
+        { label: "Expenses", data: expenses, backgroundColor: "#f44336" }
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        title: {
-          display: true,
-          text: "Sales vs Expenses"
-        },
+        title: { display: true, text: "Sales vs Expenses" },
         legend: { position: 'bottom' }
       },
       scales: {
         x: { stacked: false },
         y: {
           beginAtZero: true,
-          title: {
-            display: true,
-            text: "Amount (₱)"
-          }
+          title: { display: true, text: "Amount (₱)" }
         }
       }
     }
@@ -189,7 +174,7 @@ function capitalize(str) {
 
 function categoryLabel(key) {
   switch (key) {
-    case "foodandbeveragespurchases": return "Food & Beverage";
+    case "cogs": return "COGS";
     case "fixedexpense": return "Fixed";
     case "laborexpense": return "Labor";
     case "operatingexpense": return "Operating";
@@ -202,7 +187,7 @@ function formatPeso(num) {
   return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
 
-// Event Listeners
+// DOM listeners
 document.addEventListener("DOMContentLoaded", () => {
   fetchData();
   document.getElementById("yearSelect").addEventListener("change", fetchData);
