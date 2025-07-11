@@ -1,5 +1,5 @@
-const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
-const salesCtx = document.getElementById("sales-expense-chart").getContext("2d");
+const ctx = document.getElementById("grouped-expense-chart")?.getContext("2d");
+const salesCtx = document.getElementById("sales-expense-chart")?.getContext("2d");
 let groupedChart, salesExpenseChart;
 
 const monthOrder = [
@@ -8,9 +8,9 @@ const monthOrder = [
 ];
 
 function fetchData() {
-  const year = document.getElementById("yearSelect").value;
-  const month = document.getElementById("monthSelect").value;
-  const category = document.getElementById("categorySelect").value;
+  const year = document.getElementById("yearSelect")?.value;
+  const month = document.getElementById("monthSelect")?.value;
+  const category = document.getElementById("categorySelect")?.value;
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -33,9 +33,8 @@ function updateKPIs(data) {
 function drawGroupedExpenseChart(data, filterCategory) {
   const monthly = data.monthlyCategoryTotals || {};
   const monthlySales = data.monthlySales || {};
-  const targets = data.targets || {};
-
   const months = monthOrder.filter(m => monthly[m]);
+
   const categories = ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
   const colors = {
     cogs: "#007bff",
@@ -174,7 +173,6 @@ function updatePLTable(data) {
 
   if (!table) return;
 
-  // Clear table
   table.innerHTML = "";
 
   if (pnlData.length === 0) {
@@ -211,11 +209,8 @@ function formatPeso(num) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  document.getElementById("yearSelect").addEventListener("change", fetchData);
-  document.getElementById("monthSelect").addEventListener("change", fetchData);
-  document.getElementById("categorySelect").addEventListener("change", () => {
-    const category = document.getElementById("categorySelect").value;
-    fetchData(category);
-  });
+  document.getElementById("yearSelect")?.addEventListener("change", fetchData);
+  document.getElementById("monthSelect")?.addEventListener("change", fetchData);
+  document.getElementById("categorySelect")?.addEventListener("change", fetchData);
   fetchData();
 });
