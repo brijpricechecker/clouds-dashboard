@@ -173,4 +173,52 @@ function buildPnLTable(pnlData) {
     const tr = document.createElement("tr");
     headers.forEach(h => {
       const td = document.createElement("td");
-      td.textContent = typeof row[h] === 'number' ? formatPeso(row[h])
+      td.textContent = typeof row[h] === 'number' ? formatPeso(row[h]) : row[h];
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function categoryLabel(key) {
+  switch (key) {
+    case "foodandbeveragespurchases": return "Food & Beverage";
+    case "fixedexpense": return "Fixed";
+    case "laborexpense": return "Labor";
+    case "operatingexpense": return "Operating";
+    case "misc": return "Misc";
+    default: return key;
+  }
+}
+
+function formatPeso(num) {
+  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+}
+
+// Event Listeners
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetchData();
+  document.getElementById("yearSelect").addEventListener("change", fetchData);
+  document.getElementById("monthSelect").addEventListener("change", fetchData);
+  document.getElementById("categoryFilter").addEventListener("change", fetchData);
+
+  document.getElementById("showPnlBtn").addEventListener("click", () => {
+    document.querySelector(".charts").style.display = "none";
+    document.getElementById("pnlView").style.display = "block";
+    document.getElementById("backBtn").style.display = "block";
+  });
+
+  document.getElementById("backBtn").addEventListener("click", () => {
+    document.querySelector(".charts").style.display = "flex";
+    document.getElementById("pnlView").style.display = "none";
+    document.getElementById("backBtn").style.display = "none";
+  });
+});
