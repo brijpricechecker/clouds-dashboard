@@ -15,32 +15,38 @@
       padding: 0;
       background: #f4f6f9;
     }
+
     .container {
       display: flex;
       height: 100vh;
     }
+
     .sidebar {
       width: 22%;
       padding: 20px;
       background: #ffffff;
       box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
     }
+
     .content {
       width: 78%;
       padding: 20px;
       overflow-y: auto;
     }
+
     .filters select, .filters button {
       width: 100%;
       margin-bottom: 10px;
       padding: 8px;
     }
+
     .kpis {
       display: flex;
       flex-direction: column;
       gap: 10px;
       margin-top: 20px;
     }
+
     .kpi {
       background: #e3f2fd;
       padding: 10px;
@@ -49,36 +55,52 @@
       font-weight: bold;
       text-align: center;
     }
+
     .charts {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      height: 90vh;
     }
+
     canvas {
       background: #fff;
       border-radius: 8px;
       padding: 10px;
     }
+
+    #grouped-expense-chart {
+      height: 65% !important;
+    }
+
+    #sales-expense-chart {
+      height: 35% !important;
+    }
+
     #pnlView {
       display: none;
       background: #fff;
       padding: 20px;
       border-radius: 10px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
     }
+
     table th, table td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: right;
     }
+
     table th {
       background: #f0f0f0;
       text-align: center;
     }
+
     #backBtn {
       display: none;
       margin-top: 10px;
@@ -98,13 +120,13 @@
         <label for="yearSelect">Year:</label>
         <select id="yearSelect">
           <option>2023</option>
-          <option selected>2024</option>
-          <option>2025</option>
+          <option>2024</option>
+          <option selected>2025</option>
         </select>
 
         <label for="monthSelect">Month:</label>
         <select id="monthSelect">
-          <option value="all">All</option>
+          <option value="all" selected>All</option>
           <option>January</option>
           <option>February</option>
           <option>March</option>
@@ -143,11 +165,12 @@
 
     <div class="content">
       <div class="charts">
-        <canvas id="grouped-expense-chart" height="280"></canvas>
-        <canvas id="sales-expense-chart" height="200"></canvas>
+        <canvas id="grouped-expense-chart"></canvas>
+        <canvas id="sales-expense-chart"></canvas>
       </div>
+
       <div id="pnlView">
-        <h2>P&L Statement</h2>
+        <h3>P&L Statement</h3>
         <table id="pnlTable"></table>
       </div>
     </div>
