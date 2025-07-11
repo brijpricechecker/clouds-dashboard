@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -130,21 +128,20 @@
         </select>
 
         <button id="showPnlBtn">Show P&L</button>
-        <button id="downloadBtn">Download PDF</button>
         <button id="backBtn">← Back to Dashboard</button>
       </div>
 
       <div class="kpis">
-        <div class="kpi" id="salesKPI">₱0.00</div>
-        <div class="kpi" id="expensesKPI">₱0.00</div>
-        <div class="kpi" id="revenueKPI">₱0.00</div>
+        <div class="kpi" id="salesKPI">Sales: ₱0</div>
+        <div class="kpi" id="expensesKPI">Expenses: ₱0</div>
+        <div class="kpi" id="revenueKPI">Revenue: ₱0</div>
       </div>
     </div>
 
     <div class="content">
       <div class="charts">
-        <canvas id="grouped-expense-chart" height="300"></canvas>
-        <canvas id="sales-expense-chart" height="200"></canvas>
+        <canvas id="grouped-expense-chart" height="230"></canvas>
+        <canvas id="sales-expense-chart" height="160"></canvas>
       </div>
 
       <div id="pnlView">
