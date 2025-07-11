@@ -28,7 +28,7 @@
       padding: 20px;
       overflow-y: auto;
     }
-    .filters select, .filters button {
+    .filters select {
       width: 100%;
       margin-bottom: 10px;
       padding: 8px;
@@ -41,27 +41,22 @@
     }
     .kpi {
       background: #e3f2fd;
-      padding: 10px;
+      padding: 12px;
       border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
       text-align: center;
     }
-    .charts {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+    .charts, .pnl-section {
+      margin-top: 20px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
     }
     canvas {
       background: #fff;
       border-radius: 8px;
       padding: 10px;
-    }
-    #pnlView {
-      display: none;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
     }
     table {
       width: 100%;
@@ -77,80 +72,69 @@
       background: #f0f0f0;
       text-align: center;
     }
-    #backBtn {
-      display: none;
-      margin-top: 10px;
-      padding: 8px;
-      background: #4caf50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Sidebar Filters -->
     <div class="sidebar">
-      <div class="filters">
-        <label for="yearSelect">Year:</label>
-        <select id="yearSelect">
-          <option>2023</option>
-          <option>2024</option>
-          <option selected>2025</option>
-        </select>
+      <label for="yearSelect">Year:</label>
+      <select id="yearSelect">
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+        <option value="2025" selected>2025</option>
+      </select>
 
-        <label for="monthSelect">Month:</label>
-        <select id="monthSelect">
-          <option value="all" selected>All</option>
-          <option>January</option>
-          <option>February</option>
-          <option>March</option>
-          <option>April</option>
-          <option>May</option>
-          <option>June</option>
-          <option>July</option>
-          <option>August</option>
-          <option>September</option>
-          <option>October</option>
-          <option>November</option>
-          <option>December</option>
-        </select>
+      <label for="monthSelect">Month:</label>
+      <select id="monthSelect">
+        <option value="all">All</option>
+        <option>January</option>
+        <option>February</option>
+        <option>March</option>
+        <option>April</option>
+        <option>May</option>
+        <option>June</option>
+        <option>July</option>
+        <option>August</option>
+        <option>September</option>
+        <option>October</option>
+        <option>November</option>
+        <option>December</option>
+      </select>
 
-        <label for="categoryFilter">Major Category:</label>
-        <select id="categoryFilter">
-          <option value="all" selected>All</option>
-          <option value="cogs">COGS</option>
-          <option value="fixedexpense">Fixed</option>
-          <option value="laborexpense">Labor</option>
-          <option value="operatingexpense">Operating</option>
-          <option value="misc">Misc</option>
-        </select>
+      <label for="categoryFilter">Major Category:</label>
+      <select id="categoryFilter">
+        <option value="all" selected>All</option>
+        <option value="cogs">COGS</option>
+        <option value="fixedexpense">Fixed</option>
+        <option value="laborexpense">Labor</option>
+        <option value="operatingexpense">Operating</option>
+        <option value="misc">Misc</option>
+      </select>
 
-        <button id="showPnlBtn">Show P&L</button>
-        <button id="backBtn">← Back to Dashboard</button>
-      </div>
-
+      <!-- KPI Cards -->
       <div class="kpis">
-        <div class="kpi" id="salesKPI">Sales: ₱0</div>
-        <div class="kpi" id="expensesKPI">Expenses: ₱0</div>
-        <div class="kpi" id="revenueKPI">Revenue: ₱0</div>
+        <div class="kpi">Sales: <span id="salesKPI">₱0.00</span></div>
+        <div class="kpi">Expenses: <span id="expensesKPI">₱0.00</span></div>
+        <div class="kpi">Net Revenue: <span id="revenueKPI">₱0.00</span></div>
       </div>
     </div>
 
+    <!-- Main Dashboard Area -->
     <div class="content">
       <div class="charts">
-        <canvas id="grouped-expense-chart" height="260"></canvas>
-        <canvas id="sales-expense-chart" height="160"></canvas>
+        <canvas id="grouped-expense-chart" height="300"></canvas>
       </div>
 
-      <div id="pnlView">
-        <h2>P&L Statement</h2>
+      <!-- P&L Statement Section -->
+      <div class="pnl-section">
+        <h3>P&L Statement</h3>
         <table id="pnlTable"></table>
       </div>
     </div>
   </div>
 
+  <!-- Script -->
   <script src="script.js"></script>
 </body>
 </html>
