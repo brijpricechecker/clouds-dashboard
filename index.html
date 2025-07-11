@@ -58,7 +58,7 @@
       padding: 10px;
       height: 360px !important;
     }
-    #plTable {
+    #plTable, #summaryTable {
       margin-top: 30px;
       background: #fff;
       padding: 20px;
@@ -66,14 +66,28 @@
       width: 100%;
       border-collapse: collapse;
     }
-    #plTable th, #plTable td {
+    #plTable th, #plTable td, #summaryTable th, #summaryTable td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: right;
     }
-    #plTable th {
+    #plTable th, #summaryTable th {
       background: #f0f0f0;
       text-align: center;
+    }
+    #summaryTable {
+      display: none;
+    }
+    #showSummaryBtn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -114,6 +128,8 @@
           <option value="operatingexpense">Operating</option>
           <option value="misc">Misc</option>
         </select>
+
+        <button id="showSummaryBtn">Show Summary</button>
       </div>
 
       <div class="kpis">
@@ -129,9 +145,8 @@
         <canvas id="sales-expense-chart"></canvas>
       </div>
 
-      <table id="plTable">
-        <!-- Filled dynamically -->
-      </table>
+      <table id="plTable"></table>
+      <table id="summaryTable"></table>
     </div>
   </div>
 
