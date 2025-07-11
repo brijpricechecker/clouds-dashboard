@@ -17,15 +17,14 @@ function fetchData() {
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      if (!data || !data.monthlySales) return;
-
-      document.getElementById("salesKPI").textContent = formatPeso(data.totalSales || 0);
-      document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses || 0);
-      document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue || 0);
+      // Update KPIs
+      document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
+      document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
+      document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
 
       drawGroupedExpenseChart(data, category);
       drawSalesVsExpenseChart(data);
-      buildPnLTable(data.pnlData || []);
+      buildPnLTable(data.pnlData);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
@@ -33,13 +32,13 @@ function fetchData() {
 function drawGroupedExpenseChart(data, selectedCategory) {
   const monthly = data.monthlyCategoryTotals;
   const monthlySales = data.monthlySales;
-
   const months = monthOrder.filter(m => monthly[m]);
+
   const categories = selectedCategory === 'all'
     ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"]
     : [selectedCategory];
 
-  const colors = ["#b3e5fc", "#c8e6c9", "#fff9c4", "#d1c4e9", "#f8bbd0"];
+  const colors = ["#86c5ff", "#a0e0a9", "#ffe38d", "#92e3ea", "#bfa6ed"];
 
   const datasets = categories.map((cat, i) => ({
     label: categoryLabel(cat),
@@ -67,7 +66,6 @@ function drawGroupedExpenseChart(data, selectedCategory) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
       plugins: {
         title: {
           display: true,
@@ -78,14 +76,12 @@ function drawGroupedExpenseChart(data, selectedCategory) {
           display: categories.length > 1,
           position: 'bottom'
         },
-        datalabels: {
-          display: true
-        },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
           }
-        }
+        },
+        datalabels: { display: true }
       },
       scales: {
         x: {
@@ -121,22 +117,21 @@ function drawSalesVsExpenseChart(data) {
         {
           label: "Sales",
           data: sales,
-          backgroundColor: "#81c784"
+          backgroundColor: "#66bb6a"
         },
         {
           label: "Expenses",
           data: expenses,
-          backgroundColor: "#ef9a9a"
+          backgroundColor: "#ef5350"
         }
       ]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
       plugins: {
         title: {
           display: true,
-          text: "Sales vs Expenses"
+          text: "Monthly Sales vs Expenses"
         },
         legend: { position: 'bottom' }
       },
@@ -217,17 +212,7 @@ function downloadPDF() {
 }
 
 // Event Listeners
-
 document.addEventListener("DOMContentLoaded", () => {
-  // Default year to latest year
-  const yearSelect = document.getElementById("yearSelect");
-  if (yearSelect) {
-    const currentYear = new Date().getFullYear();
-    [...yearSelect.options].forEach(option => {
-      option.selected = option.value == currentYear;
-    });
-  }
-
   fetchData();
   document.getElementById("yearSelect").addEventListener("change", fetchData);
   document.getElementById("monthSelect").addEventListener("change", fetchData);
