@@ -1,7 +1,6 @@
-const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
-const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
-
-let groupedChart, salesChart;
+const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
+const salesCtx = document.getElementById("sales-expense-chart").getContext("2d");
+let groupedChart, salesExpenseChart;
 
 const monthOrder = [
   "january", "february", "march", "april", "may", "june",
@@ -11,7 +10,7 @@ const monthOrder = [
 function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
-  const category = document.getElementById("categoryFilter").value;
+  const category = document.getElementById("categorySelect").value;
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -20,86 +19,88 @@ function fetchData() {
       updateKPIs(data);
       drawGroupedExpenseChart(data, category);
       drawSalesVsExpenseChart(data);
-      updatePnLTable(data.pnlData);
+      updatePLTable(data);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
 
 function updateKPIs(data) {
-  document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
-  document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
+  document.getElementById("salesKPI").textContent = formatPeso(data.totalSales || 0);
+  document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses || 0);
+  document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue || 0);
 }
 
-function drawGroupedExpenseChart(data, selectedCategory) {
-  const monthly = data.monthlyCategoryTotals;
-  const monthlySales = data.monthlySales;
+function drawGroupedExpenseChart(data, filterCategory) {
+  const monthly = data.monthlyCategoryTotals || {};
+  const monthlySales = data.monthlySales || {};
+  const targets = data.targets || {};
 
   const months = monthOrder.filter(m => monthly[m]);
-  const categories = selectedCategory === 'all'
-    ? ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"]
-    : [selectedCategory];
-
+  const categories = ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
   const colors = {
-    cogs: "#4e79a7",
-    fixedexpense: "#f28e2b",
-    laborexpense: "#e15759",
-    operatingexpense: "#76b7b2",
-    misc: "#59a14f"
+    cogs: "#007bff",
+    fixedexpense: "#28a745",
+    laborexpense: "#ffc107",
+    operatingexpense: "#17a2b8",
+    misc: "#6f42c1"
   };
 
-  const datasets = categories.map(cat => ({
+  const filtered = filterCategory !== "all" ? [filterCategory] : categories;
+
+  const datasets = filtered.map(cat => ({
     label: categoryLabel(cat),
     data: months.map(m => {
-      const amount = (monthly[m] && monthly[m][cat]) || 0;
-      const sales = monthlySales[m] || 0;
-      return sales > 0 ? (amount / sales) * 100 : 0;
+      const expense = (monthly[m]?.[cat] || 0);
+      const sales = (monthlySales[m] || 0);
+      return sales > 0 ? (expense / sales) * 100 : 0;
     }),
     backgroundColor: colors[cat],
     datalabels: {
-      color: '#000',
-      anchor: 'end',
-      align: 'top',
-      formatter: v => v.toFixed(1) + "%"
+      anchor: "end",
+      align: "top",
+      formatter: v => v.toFixed(1) + "%",
+      color: "#000"
     }
   }));
 
   if (groupedChart) groupedChart.destroy();
 
-  groupedChart = new Chart(ctxGrouped, {
+  groupedChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: months.map(capitalize),
-      datasets
+      datasets: datasets
     },
     options: {
       responsive: true,
       plugins: {
+        datalabels: {
+          display: true
+        },
         title: {
           display: true,
           text: "Monthly Expenses as % of Revenue",
           font: { size: 16 }
         },
-        legend: {
-          display: categories.length > 1,
-          position: 'bottom'
-        },
         tooltip: {
           callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
+            label: function (ctx) {
+              const percent = ctx.raw.toFixed(1);
+              const month = ctx.label.toLowerCase();
+              const sales = monthlySales[month] || 0;
+              const peso = ((percent / 100) * sales).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+              return `${ctx.dataset.label}: ${percent}% (${peso})`;
+            }
           }
-        },
-        datalabels: {
-          display: true
         }
       },
       scales: {
-        x: { grid: { display: false } },
         y: {
           beginAtZero: true,
-          max: 100,
-          title: { display: true, text: "% of Revenue" },
-          grid: { display: false }
+          title: {
+            display: true,
+            text: "% of Monthly Sales"
+          }
         }
       }
     },
@@ -108,26 +109,37 @@ function drawGroupedExpenseChart(data, selectedCategory) {
 }
 
 function drawSalesVsExpenseChart(data) {
-  const months = monthOrder.filter(m => data.monthlySales[m] || data.monthlyExpenseTotals[m]);
-  const sales = months.map(m => data.monthlySales[m] || 0);
-  const expenses = months.map(m => data.monthlyExpenseTotals[m] || 0);
+  const monthly = data.monthlyCategoryTotals || {};
+  const monthlySales = data.monthlySales || {};
+  const months = monthOrder.filter(m => monthly[m]);
 
-  if (salesChart) salesChart.destroy();
+  if (months.length === 0) {
+    console.warn("No monthly data available.");
+    return;
+  }
 
-  salesChart = new Chart(ctxSales, {
+  const salesData = months.map(m => monthlySales[m] || 0);
+  const expensesData = months.map(m => {
+    const categories = monthly[m] || {};
+    return Object.values(categories).reduce((sum, v) => sum + v, 0);
+  });
+
+  if (salesExpenseChart) salesExpenseChart.destroy();
+
+  salesExpenseChart = new Chart(salesCtx, {
     type: "bar",
     data: {
       labels: months.map(capitalize),
       datasets: [
         {
           label: "Sales",
-          data: sales,
-          backgroundColor: "#4caf50"
+          backgroundColor: "#28a745",
+          data: salesData
         },
         {
           label: "Expenses",
-          data: expenses,
-          backgroundColor: "#f44336"
+          backgroundColor: "#dc3545",
+          data: expensesData
         }
       ]
     },
@@ -136,9 +148,8 @@ function drawSalesVsExpenseChart(data) {
       plugins: {
         title: {
           display: true,
-          text: "Sales vs Expenses"
+          text: "Monthly Sales vs Expenses"
         },
-        legend: { position: 'bottom' },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${formatPeso(ctx.raw)}`
@@ -146,12 +157,10 @@ function drawSalesVsExpenseChart(data) {
         }
       },
       scales: {
-        x: { stacked: false },
         y: {
           beginAtZero: true,
-          title: {
-            display: true,
-            text: "Amount (₱)"
+          ticks: {
+            callback: value => formatPeso(value)
           }
         }
       }
@@ -159,35 +168,27 @@ function drawSalesVsExpenseChart(data) {
   });
 }
 
-function updatePnLTable(pnlData) {
-  const table = document.getElementById("pnlTable");
+function updatePLTable(data) {
+  const table = document.getElementById("plTable");
+  const pnlData = data.pnlData || [];
+
+  if (!table) return;
+
+  // Clear table
   table.innerHTML = "";
-  if (!pnlData || pnlData.length === 0) return;
 
-  const headers = Object.keys(pnlData[0]);
-  const thead = document.createElement("thead");
-  const tbody = document.createElement("tbody");
+  if (pnlData.length === 0) {
+    table.innerHTML = "<tr><td colspan='13'>No data available</td></tr>";
+    return;
+  }
 
-  const trHead = document.createElement("tr");
-  headers.forEach(h => {
-    const th = document.createElement("th");
-    th.textContent = capitalize(h);
-    trHead.appendChild(th);
-  });
-  thead.appendChild(trHead);
-
-  pnlData.forEach(row => {
-    const tr = document.createElement("tr");
-    headers.forEach(h => {
-      const td = document.createElement("td");
-      td.textContent = typeof row[h] === 'number' ? formatPeso(row[h]) : row[h];
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
+  const months = monthOrder;
+  const headerRow = `<tr><th>Category</th>${months.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = pnlData.map(row => {
+    return `<tr><td>${row.category}</td>${months.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
   });
 
-  table.appendChild(thead);
-  table.appendChild(tbody);
+  table.innerHTML = headerRow + rows.join("");
 }
 
 function capitalize(str) {
@@ -209,9 +210,12 @@ function formatPeso(num) {
   return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  fetchData();
+document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("yearSelect").addEventListener("change", fetchData);
   document.getElementById("monthSelect").addEventListener("change", fetchData);
-  document.getElementById("categoryFilter").addEventListener("change", fetchData);
+  document.getElementById("categorySelect").addEventListener("change", () => {
+    const category = document.getElementById("categorySelect").value;
+    fetchData(category);
+  });
+  fetchData();
 });
