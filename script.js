@@ -10,18 +10,20 @@ const monthOrder = [
 
 function fetchData() {
   const year = document.getElementById("yearSelect").value;
-  const month = document.getElementById("monthSelect").value.toLowerCase();
+  const month = document.getElementById("monthSelect").value;
   const category = document.getElementById("categoryFilter").value;
+
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      // Update KPIs
+      // ✅ Update KPI boxes
       document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
       document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
       document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
 
+      // ✅ Draw charts
       drawGroupedExpenseChart(data, category);
       drawSalesVsExpenseChart(data);
       buildPnLTable(data.pnlData);
@@ -32,29 +34,29 @@ function fetchData() {
 function drawGroupedExpenseChart(data, selectedCategory) {
   const monthly = data.monthlyCategoryTotals;
   const monthlySales = data.monthlySales;
+  const targets = data.targets;
+
   const months = monthOrder.filter(m => monthly[m]);
-
-  const categories = selectedCategory === 'all'
-    ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"]
-    : [selectedCategory];
-
+  const categories = selectedCategory === 'all' ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"] : [selectedCategory];
   const colors = ["#86c5ff", "#a0e0a9", "#ffe38d", "#92e3ea", "#bfa6ed"];
 
-  const datasets = categories.map((cat, i) => ({
-    label: categoryLabel(cat),
-    data: months.map(m => {
-      const amt = (monthly[m] && monthly[m][cat]) || 0;
-      const sale = monthlySales[m] || 0;
-      return sale > 0 ? (amt / sale) * 100 : 0;
-    }),
-    backgroundColor: colors[i % colors.length],
-    datalabels: {
-      color: '#000',
-      anchor: 'end',
-      align: 'top',
-      formatter: v => v.toFixed(1) + "%"
-    }
-  }));
+  const datasets = categories.map((cat, i) => {
+    return {
+      label: categoryLabel(cat),
+      data: months.map(m => {
+        const amt = (monthly[m] && monthly[m][cat]) || 0;
+        const sale = monthlySales[m] || 0;
+        return sale > 0 ? (amt / sale) * 100 : 0;
+      }),
+      backgroundColor: colors[i % colors.length],
+      datalabels: {
+        color: '#000',
+        anchor: 'end',
+        align: 'top',
+        formatter: v => v.toFixed(1) + "%"
+      }
+    };
+  });
 
   if (groupedChart) groupedChart.destroy();
 
@@ -81,7 +83,9 @@ function drawGroupedExpenseChart(data, selectedCategory) {
             label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
           }
         },
-        datalabels: { display: true }
+        datalabels: {
+          display: true
+        }
       },
       scales: {
         x: {
@@ -117,12 +121,12 @@ function drawSalesVsExpenseChart(data) {
         {
           label: "Sales",
           data: sales,
-          backgroundColor: "#66bb6a"
+          backgroundColor: "#4caf50"
         },
         {
           label: "Expenses",
           data: expenses,
-          backgroundColor: "#ef5350"
+          backgroundColor: "#f44336"
         }
       ]
     },
@@ -131,7 +135,8 @@ function drawSalesVsExpenseChart(data) {
       plugins: {
         title: {
           display: true,
-          text: "Monthly Sales vs Expenses"
+          text: "Monthly Sales vs Expenses",
+          font: { size: 16 }
         },
         legend: { position: 'bottom' }
       },
@@ -180,10 +185,6 @@ function buildPnLTable(pnlData) {
   table.appendChild(tbody);
 }
 
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
 function categoryLabel(key) {
   switch (key) {
     case "foodandbeveragespurchases": return "Food & Beverage";
@@ -199,13 +200,16 @@ function formatPeso(num) {
   return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
 
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 function downloadPDF() {
   const doc = new jspdf.jsPDF('p', 'pt', 'a4');
   html2canvas(document.querySelector(".charts")).then(canvas => {
     const imgData = canvas.toDataURL("image/png");
-    const imgProps = doc.getImageProperties(imgData);
     const pdfWidth = doc.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
     doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     doc.save("dashboard.pdf");
   });
