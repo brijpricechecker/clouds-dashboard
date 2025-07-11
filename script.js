@@ -1,5 +1,5 @@
-const ctx = document.getElementById("grouped-expense-chart")?.getContext("2d");
-const salesCtx = document.getElementById("sales-expense-chart")?.getContext("2d");
+const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
+const salesCtx = document.getElementById("sales-expense-chart").getContext("2d");
 let groupedChart, salesExpenseChart;
 
 const monthOrder = [
@@ -8,9 +8,9 @@ const monthOrder = [
 ];
 
 function fetchData() {
-  const year = document.getElementById("yearSelect")?.value;
-  const month = document.getElementById("monthSelect")?.value;
-  const category = document.getElementById("categorySelect")?.value;
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+  const category = document.getElementById("categorySelect").value;
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -20,6 +20,7 @@ function fetchData() {
       drawGroupedExpenseChart(data, category);
       drawSalesVsExpenseChart(data);
       updatePLTable(data);
+      updateSummaryTable(data); // populate summary table
     })
     .catch(err => console.error("Error fetching data:", err));
 }
@@ -34,7 +35,6 @@ function drawGroupedExpenseChart(data, filterCategory) {
   const monthly = data.monthlyCategoryTotals || {};
   const monthlySales = data.monthlySales || {};
   const months = monthOrder.filter(m => monthly[m]);
-
   const categories = ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
   const colors = {
     cogs: "#007bff",
@@ -68,7 +68,7 @@ function drawGroupedExpenseChart(data, filterCategory) {
     type: "bar",
     data: {
       labels: months.map(capitalize),
-      datasets: datasets
+      datasets
     },
     options: {
       responsive: true,
@@ -111,11 +111,6 @@ function drawSalesVsExpenseChart(data) {
   const monthly = data.monthlyCategoryTotals || {};
   const monthlySales = data.monthlySales || {};
   const months = monthOrder.filter(m => monthly[m]);
-
-  if (months.length === 0) {
-    console.warn("No monthly data available.");
-    return;
-  }
 
   const salesData = months.map(m => monthlySales[m] || 0);
   const expensesData = months.map(m => {
@@ -172,7 +167,6 @@ function updatePLTable(data) {
   const pnlData = data.pnlData || [];
 
   if (!table) return;
-
   table.innerHTML = "";
 
   if (pnlData.length === 0) {
@@ -184,6 +178,25 @@ function updatePLTable(data) {
   const headerRow = `<tr><th>Category</th>${months.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
   const rows = pnlData.map(row => {
     return `<tr><td>${row.category}</td>${months.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
+  });
+
+  table.innerHTML = headerRow + rows.join("");
+}
+
+function updateSummaryTable(data) {
+  const table = document.getElementById("summaryTable");
+  const summary = data.minorCategoryBreakdown || [];
+
+  if (!table) return;
+
+  if (summary.length === 0) {
+    table.innerHTML = "<tr><td colspan='13'>No data available</td></tr>";
+    return;
+  }
+
+  const headerRow = `<tr><th>Minor Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = summary.map(row => {
+    return `<tr><td>${row.category}</td>${monthOrder.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
   });
 
   table.innerHTML = headerRow + rows.join("");
@@ -209,8 +222,17 @@ function formatPeso(num) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  document.getElementById("yearSelect")?.addEventListener("change", fetchData);
-  document.getElementById("monthSelect")?.addEventListener("change", fetchData);
-  document.getElementById("categorySelect")?.addEventListener("change", fetchData);
+  document.getElementById("yearSelect").addEventListener("change", fetchData);
+  document.getElementById("monthSelect").addEventListener("change", fetchData);
+  document.getElementById("categorySelect").addEventListener("change", () => {
+    const category = document.getElementById("categorySelect").value;
+    fetchData(category);
+  });
+
+  document.getElementById("showSummaryBtn").addEventListener("click", () => {
+    const table = document.getElementById("summaryTable");
+    table.style.display = table.style.display === "none" ? "table" : "none";
+  });
+
   fetchData();
 });
