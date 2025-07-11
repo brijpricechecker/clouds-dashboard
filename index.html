@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -104,7 +102,7 @@
 
         <label for="monthSelect">Month:</label>
         <select id="monthSelect">
-          <option value="all">All</option>
+          <option value="all" selected>All</option>
           <option>January</option>
           <option>February</option>
           <option>March</option>
@@ -119,8 +117,8 @@
           <option>December</option>
         </select>
 
-        <label for="categorySelect">Major Category:</label>
-        <select id="categorySelect">
+        <label for="categoryFilter">Expense Category:</label>
+        <select id="categoryFilter">
           <option value="all" selected>All</option>
           <option value="foodandbeveragespurchases">Food & Beverage</option>
           <option value="fixedexpense">Fixed</option>
@@ -129,38 +127,23 @@
           <option value="misc">Misc</option>
         </select>
 
-        <button id="showPnlBtn">Show P&L</button>
-        <button id="downloadBtn">Download PDF</button>
+        <button id="showPnlBtn">Show P&L Table</button>
         <button id="backBtn">← Back to Dashboard</button>
       </div>
 
       <div class="kpis">
-        <div class="kpi">Sales: <span id="salesKPI">₱0.00</span></div>
-        <div class="kpi">Expenses: <span id="expensesKPI">₱0.00</span></div>
-        <div class="kpi">Revenue: <span id="revenueKPI">₱0.00</span></div>
+        <div class="kpi" id="salesKPI">₱0</div>
+        <div class="kpi" id="expensesKPI">₱0</div>
+        <div class="kpi" id="revenueKPI">₱0</div>
       </div>
     </div>
 
     <div class="content">
       <div class="charts">
-        <canvas id="grouped-expense-chart" height="250"></canvas>
-        <canvas id="sales-expense-chart" height="180"></canvas>
+        <canvas id="grouped-expense-chart" height="300"></canvas>
+        <canvas id="sales-expense-chart" height="300"></canvas>
       </div>
-
-      <div id="pnlView">
-        <h3>Profit and Loss Statement</h3>
-        <table>
-          <tr><th>Category</th><th>Amount</th></tr>
-          <tr><td>Sales</td><td id="pl-sales">₱0.00</td></tr>
-          <tr><td>Cost of Goods Sold</td><td id="pl-cogs">₱0.00</td></tr>
-          <tr><td><strong>Gross Profit</strong></td><td id="pl-gross">₱0.00</td></tr>
-          <tr><td>Operating Expenses</td><td id="pl-opex">₱0.00</td></tr>
-          <tr><td>Fixed Expenses</td><td id="pl-fixed">₱0.00</td></tr>
-          <tr><td>Labor Expenses</td><td id="pl-labor">₱0.00</td></tr>
-          <tr><td>Miscellaneous</td><td id="pl-misc">₱0.00</td></tr>
-          <tr><td><strong>Net Profit</strong></td><td id="pl-net">₱0.00</td></tr>
-        </table>
-      </div>
+      <div id="pnlView"></div>
     </div>
   </div>
 
