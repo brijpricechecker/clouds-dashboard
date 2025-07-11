@@ -203,7 +203,6 @@ function formatPeso(num) {
 }
 
 // Event Listeners
-
 document.addEventListener("DOMContentLoaded", () => {
   fetchData();
   document.getElementById("yearSelect").addEventListener("change", fetchData);
