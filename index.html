@@ -11,92 +11,89 @@
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background: #f5f7fa;
+      background: #f5f5f5;
     }
 
     .container {
-      padding: 20px;
-      max-width: 1200px;
-      margin: auto;
+      display: flex;
+      height: 100vh;
     }
 
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
+    .sidebar {
+      width: 20%;
+      padding: 20px;
+      background: #ffffff;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .content {
+      width: 80%;
+      padding: 20px;
+      overflow-y: auto;
     }
 
     .filters select {
-      padding: 6px;
-      font-size: 14px;
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
     }
 
     .kpis {
       display: flex;
-      gap: 20px;
+      gap: 15px;
       margin-bottom: 20px;
     }
 
     .kpi {
+      flex: 1;
       background: #e3f2fd;
       padding: 15px;
       border-radius: 8px;
-      flex: 1;
-      font-size: 16px;
-      font-weight: bold;
       text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-weight: bold;
+    }
+
+    .charts {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      margin-bottom: 30px;
     }
 
     canvas {
-      background: #fff;
+      background: white;
+      padding: 10px;
       border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 30px;
-      width: 100% !important;
+    }
+
+    #pnlView {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background: #fff;
-      border-radius: 10px;
-      overflow: hidden;
       margin-top: 20px;
     }
 
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
+    table th, table td {
+      padding: 8px;
+      border: 1px solid #ccc;
       text-align: right;
     }
 
-    th {
-      background: #f1f1f1;
+    table th {
+      background: #f0f0f0;
       text-align: center;
-    }
-
-    td:first-child, th:first-child {
-      text-align: left;
-    }
-
-    @media (max-width: 768px) {
-      .kpis {
-        flex-direction: column;
-      }
-
-      .filters {
-        flex-direction: column;
-      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Business Dashboard</h2>
-
-    <div class="filters">
+    <div class="sidebar">
+      <h2>Filters</h2>
       <label for="yearSelect">Year:</label>
       <select id="yearSelect">
         <option>2023</option>
@@ -121,28 +118,36 @@
         <option>December</option>
       </select>
 
-      <label for="categoryFilter">Major Category:</label>
+      <label for="categoryFilter">Category:</label>
       <select id="categoryFilter">
         <option value="all" selected>All</option>
         <option value="cogs">COGS</option>
-        <option value="fixedexpense">Fixed</option>
-        <option value="laborexpense">Labor</option>
-        <option value="operatingexpense">Operating</option>
-        <option value="misc">Misc</option>
+        <option value="fixedexpense">Fixed Expense</option>
+        <option value="laborexpense">Labor Expense</option>
+        <option value="operatingexpense">Operating Expense</option>
+        <option value="misc">Miscellaneous</option>
       </select>
     </div>
 
-    <div class="kpis">
-      <div class="kpi">Total Sales: <div id="salesKPI">₱0.00</div></div>
-      <div class="kpi">Total Expenses: <div id="expensesKPI">₱0.00</div></div>
-      <div class="kpi">Net Revenue: <div id="revenueKPI">₱0.00</div></div>
+    <div class="content">
+      <h2>Business Dashboard</h2>
+
+      <div class="kpis">
+        <div class="kpi">Sales: <span id="salesKPI">₱0.00</span></div>
+        <div class="kpi">Expenses: <span id="expensesKPI">₱0.00</span></div>
+        <div class="kpi">Revenue: <span id="revenueKPI">₱0.00</span></div>
+      </div>
+
+      <div class="charts">
+        <canvas id="grouped-expense-chart" height="300"></canvas>
+        <canvas id="sales-expense-chart" height="300"></canvas>
+      </div>
+
+      <div id="pnlView">
+        <h3>P&L Table</h3>
+        <table id="pnlTable"></table>
+      </div>
     </div>
-
-    <canvas id="grouped-expense-chart" height="300"></canvas>
-    <canvas id="sales-expense-chart" height="300"></canvas>
-
-    <h3>Profit & Loss Table</h3>
-    <table id="pnlTable"></table>
   </div>
 
   <script src="script.js"></script>
