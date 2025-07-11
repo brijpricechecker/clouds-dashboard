@@ -1,181 +1,156 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Business Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f4f6f9;
+/**
+ * Google Apps Script - Backend for Dashboard
+ */
+
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const masterSheet = ss.getSheetByName("Master");
+  const salesSheet = ss.getSheetByName("Sales");
+  const params = e.parameter;
+
+  const selectedYear = params.year || new Date().getFullYear().toString();
+  const selectedMonth = (params.month || "all").toLowerCase();
+
+  const expenseData = masterSheet.getDataRange().getValues();
+  const salesData = salesSheet.getDataRange().getValues();
+
+  const header = expenseData[0];
+  const monthIdx = header.indexOf("Month");
+  const yearIdx = header.indexOf("Date");
+  const amountIdx = header.indexOf("Amount");
+  const categoryIdx = header.indexOf("Category");
+
+  const salesHeader = salesData[0];
+  const salesDateIdx = salesHeader.indexOf("Date");
+  const salesAmountIdx = salesHeader.indexOf("Amount");
+
+  const monthMap = {
+    "january": 0, "february": 1, "march": 2, "april": 3,
+    "may": 4, "june": 5, "july": 6, "august": 7,
+    "september": 8, "october": 9, "november": 10, "december": 11
+  };
+
+  const targets = {
+    foodandbeveragespurchases: 35,
+    fixedexpense: 24,
+    laborexpense: 18,
+    operatingexpense: 8,
+    misc: 5,
+    profit: 10
+  };
+
+  const categoryMap = {
+    "FOOD": "foodandbeveragespurchases",
+    "LIQUOR": "foodandbeveragespurchases",
+    "BEER": "foodandbeveragespurchases",
+    "COFFEE": "foodandbeveragespurchases",
+    "BAR CONSUMABLES": "foodandbeveragespurchases",
+
+    "RENTAL EXPENSE": "fixedexpense",
+    "RENTAL EXPENSE-STORAGE": "fixedexpense",
+    "UTILITIES EXPENSE (ELECTRIC)": "fixedexpense",
+    "UTILITIES EXPENSE (WATER)": "fixedexpense",
+    "UTILITIES EXPENSE (INTERNET)": "fixedexpense",
+    "UTILITIES EXPENSE (SOLANE)": "fixedexpense",
+    "CONDOMINIUM ASSOC FEE": "fixedexpense",
+    "REPAIRS AND MAINTENANCE": "fixedexpense",
+    "MARKETING EXPENSE": "fixedexpense",
+    "PENALTIES (OVERDUE RENTAL & UTILITIES)": "fixedexpense",
+
+    "SALARIES AND WAGES": "laborexpense",
+    "PREMIUM CONTRIBUTIONS(SSS,PHIC,PAGIBIG)": "laborexpense",
+
+    "CLEANING SUPPLIES/ SANITATION & LAUNDRY": "operatingexpense",
+    "DECORATIONS & IMPROVEMENTS": "operatingexpense",
+    "KITCHEN EQUIPMENT": "operatingexpense",
+    "BAR EQUIPMENT": "operatingexpense",
+    "RESTAURANT SUPPLIES": "operatingexpense",
+    "UNIFORMS": "operatingexpense",
+    "OFFICE SUPPLIES": "operatingexpense",
+    "TRANSPORTATION AND MEALS": "operatingexpense",
+    "PERMITS & LICENSES": "operatingexpense",
+    "LEGAL & PROFESSIONAL FEES": "operatingexpense",
+    "INSURANCE (FIRE)": "operatingexpense",
+    "OFFICE EQUIPMENT": "operatingexpense",
+    "WASTAGE EXPENSE (OERA)": "operatingexpense",
+    "BIR PENALTIES(QUARTERLY VAT) Late Filing": "operatingexpense",
+    "PARKING FEES": "operatingexpense",
+    "REPRESENTATION AND ALLOWANCES": "operatingexpense"
+  };
+
+  const monthlyCategoryTotals = {};
+  const monthlyExpenseTotals = {};
+  const monthlySales = {};
+  let totalSales = 0;
+  let totalExpenses = 0;
+
+  const getMonthName = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'long' }).toLowerCase();
+  };
+
+  // Process sales
+  for (let i = 1; i < salesData.length; i++) {
+    const row = salesData[i];
+    const date = new Date(row[salesDateIdx]);
+    if (String(date.getFullYear()) !== selectedYear) continue;
+
+    const monthName = getMonthName(date);
+    const amount = parseFloat(row[salesAmountIdx]) || 0;
+    monthlySales[monthName] = (monthlySales[monthName] || 0) + amount;
+    if (selectedMonth === "all" || selectedMonth === monthName) {
+      totalSales += amount;
     }
+  }
 
-    .container {
-      display: flex;
-      height: 100vh;
+  // Process expenses
+  for (let i = 1; i < expenseData.length; i++) {
+    const row = expenseData[i];
+    const month = String(row[monthIdx]).toLowerCase();
+    const date = new Date(row[yearIdx]);
+    const year = date.getFullYear();
+    if (String(year) !== selectedYear) continue;
+
+    const category = String(row[categoryIdx] || "").trim().toUpperCase();
+    const mapped = categoryMap[category] || "misc";
+    const amount = parseFloat(row[amountIdx]) || 0;
+
+    if (!monthlyCategoryTotals[month]) monthlyCategoryTotals[month] = {};
+    monthlyCategoryTotals[month][mapped] = (monthlyCategoryTotals[month][mapped] || 0) + amount;
+    monthlyExpenseTotals[month] = (monthlyExpenseTotals[month] || 0) + amount;
+
+    if (selectedMonth === "all" || selectedMonth === month) {
+      totalExpenses += amount;
     }
+  }
 
-    .sidebar {
-      width: 22%;
-      padding: 20px;
-      background: #ffffff;
-      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
-    }
+  const totalRevenue = totalSales - totalExpenses;
 
-    .content {
-      width: 78%;
-      padding: 20px;
-      overflow-y: auto;
-    }
+  // P&L Table Data
+  const pnlData = [];
+  const monthList = Object.keys(monthlySales);
 
-    .filters select, .filters button {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 8px;
-    }
+  const totalRow = {
+    category: "Total"
+  };
 
-    .kpis {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 20px;
-    }
+  for (let m of monthList) {
+    totalRow[m] = monthlySales[m] - (monthlyExpenseTotals[m] || 0);
+  }
 
-    .kpi {
-      background: #e3f2fd;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      text-align: center;
-    }
+  pnlData.push({ category: "Sales", ...monthlySales });
+  pnlData.push({ category: "Expenses", ...monthlyExpenseTotals });
+  pnlData.push(totalRow);
 
-    .charts {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      height: 90vh;
-    }
-
-    canvas {
-      background: #fff;
-      border-radius: 8px;
-      padding: 10px;
-    }
-
-    #grouped-expense-chart {
-      height: 65% !important;
-    }
-
-    #sales-expense-chart {
-      height: 35% !important;
-    }
-
-    #pnlView {
-      display: none;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    table th, table td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: right;
-    }
-
-    table th {
-      background: #f0f0f0;
-      text-align: center;
-    }
-
-    #backBtn {
-      display: none;
-      margin-top: 10px;
-      padding: 8px;
-      background: #4caf50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="sidebar">
-      <div class="filters">
-        <label for="yearSelect">Year:</label>
-        <select id="yearSelect">
-          <option>2023</option>
-          <option>2024</option>
-          <option selected>2025</option>
-        </select>
-
-        <label for="monthSelect">Month:</label>
-        <select id="monthSelect">
-          <option value="all" selected>All</option>
-          <option>January</option>
-          <option>February</option>
-          <option>March</option>
-          <option>April</option>
-          <option>May</option>
-          <option>June</option>
-          <option>July</option>
-          <option>August</option>
-          <option>September</option>
-          <option>October</option>
-          <option>November</option>
-          <option>December</option>
-        </select>
-
-        <label for="categoryFilter">Major Category:</label>
-        <select id="categoryFilter">
-          <option value="all" selected>All</option>
-          <option value="foodandbeveragespurchases">Food & Beverage</option>
-          <option value="fixedexpense">Fixed</option>
-          <option value="laborexpense">Labor</option>
-          <option value="operatingexpense">Operating</option>
-          <option value="misc">Misc</option>
-        </select>
-
-        <button id="showPnlBtn">Show P&L</button>
-        <button id="downloadBtn">Download PDF</button>
-        <button id="backBtn">← Back to Dashboard</button>
-      </div>
-
-      <div class="kpis">
-        <div class="kpi" id="salesKPI">₱0.00</div>
-        <div class="kpi" id="expensesKPI">₱0.00</div>
-        <div class="kpi" id="revenueKPI">₱0.00</div>
-      </div>
-    </div>
-
-    <div class="content">
-      <div class="charts">
-        <canvas id="grouped-expense-chart"></canvas>
-        <canvas id="sales-expense-chart"></canvas>
-      </div>
-
-      <div id="pnlView">
-        <h3>P&L Statement</h3>
-        <table id="pnlTable"></table>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
+  return ContentService.createTextOutput(
+    JSON.stringify({
+      totalSales,
+      totalExpenses,
+      totalRevenue,
+      monthlyCategoryTotals,
+      monthlySales,
+      monthlyExpenseTotals,
+      targets,
+      pnlData
+    })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
