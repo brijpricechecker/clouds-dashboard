@@ -102,7 +102,7 @@
 
         <label for="monthSelect">Month:</label>
         <select id="monthSelect">
-          <option value="all">All</option>
+          <option value="all" selected>All</option>
           <option>January</option>
           <option>February</option>
           <option>March</option>
@@ -120,7 +120,7 @@
         <label for="categoryFilter">Major Category:</label>
         <select id="categoryFilter">
           <option value="all" selected>All</option>
-          <option value="foodandbeveragespurchases">Food & Beverage</option>
+          <option value="cogs">COGS</option>
           <option value="fixedexpense">Fixed</option>
           <option value="laborexpense">Labor</option>
           <option value="operatingexpense">Operating</option>
@@ -140,12 +140,12 @@
 
     <div class="content">
       <div class="charts">
-        <canvas id="grouped-expense-chart" height="230"></canvas>
+        <canvas id="grouped-expense-chart" height="260"></canvas>
         <canvas id="sales-expense-chart" height="160"></canvas>
       </div>
 
       <div id="pnlView">
-        <h3>Profit & Loss Statement</h3>
+        <h2>P&L Statement</h2>
         <table id="pnlTable"></table>
       </div>
     </div>
