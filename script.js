@@ -1,6 +1,7 @@
 const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
 const salesCtx = document.getElementById("sales-expense-chart").getContext("2d");
 let groupedChart, salesExpenseChart;
+let rawData = {};
 
 const monthOrder = [
   "january", "february", "march", "april", "may", "june",
@@ -16,11 +17,12 @@ function fetchData() {
   fetch(url)
     .then(res => res.json())
     .then(data => {
+      rawData = data;
       updateKPIs(data);
       drawGroupedExpenseChart(data, category);
       drawSalesVsExpenseChart(data);
-      updatePLTable(data);
-      updateSummaryTable(data); // populate summary table
+      updatePLTable(data.pnlData);
+      updateSummaryTable(data.summaryMap);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
@@ -35,6 +37,7 @@ function drawGroupedExpenseChart(data, filterCategory) {
   const monthly = data.monthlyCategoryTotals || {};
   const monthlySales = data.monthlySales || {};
   const months = monthOrder.filter(m => monthly[m]);
+
   const categories = ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
   const colors = {
     cogs: "#007bff",
@@ -68,14 +71,12 @@ function drawGroupedExpenseChart(data, filterCategory) {
     type: "bar",
     data: {
       labels: months.map(capitalize),
-      datasets
+      datasets: datasets
     },
     options: {
       responsive: true,
       plugins: {
-        datalabels: {
-          display: true
-        },
+        datalabels: { display: true },
         title: {
           display: true,
           text: "Monthly Expenses as % of Revenue",
@@ -87,7 +88,9 @@ function drawGroupedExpenseChart(data, filterCategory) {
               const percent = ctx.raw.toFixed(1);
               const month = ctx.label.toLowerCase();
               const sales = monthlySales[month] || 0;
-              const peso = ((percent / 100) * sales).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+              const peso = ((percent / 100) * sales).toLocaleString("en-PH", {
+                style: 'currency', currency: 'PHP'
+              });
               return `${ctx.dataset.label}: ${percent}% (${peso})`;
             }
           }
@@ -96,10 +99,7 @@ function drawGroupedExpenseChart(data, filterCategory) {
       scales: {
         y: {
           beginAtZero: true,
-          title: {
-            display: true,
-            text: "% of Monthly Sales"
-          }
+          title: { display: true, text: "% of Monthly Sales" }
         }
       }
     },
@@ -112,38 +112,27 @@ function drawSalesVsExpenseChart(data) {
   const monthlySales = data.monthlySales || {};
   const months = monthOrder.filter(m => monthly[m]);
 
+  if (salesExpenseChart) salesExpenseChart.destroy();
+
   const salesData = months.map(m => monthlySales[m] || 0);
   const expensesData = months.map(m => {
     const categories = monthly[m] || {};
     return Object.values(categories).reduce((sum, v) => sum + v, 0);
   });
 
-  if (salesExpenseChart) salesExpenseChart.destroy();
-
   salesExpenseChart = new Chart(salesCtx, {
     type: "bar",
     data: {
       labels: months.map(capitalize),
       datasets: [
-        {
-          label: "Sales",
-          backgroundColor: "#28a745",
-          data: salesData
-        },
-        {
-          label: "Expenses",
-          backgroundColor: "#dc3545",
-          data: expensesData
-        }
+        { label: "Sales", backgroundColor: "#28a745", data: salesData },
+        { label: "Expenses", backgroundColor: "#dc3545", data: expensesData }
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        title: {
-          display: true,
-          text: "Monthly Sales vs Expenses"
-        },
+        title: { display: true, text: "Monthly Sales vs Expenses" },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${formatPeso(ctx.raw)}`
@@ -153,53 +142,62 @@ function drawSalesVsExpenseChart(data) {
       scales: {
         y: {
           beginAtZero: true,
-          ticks: {
-            callback: value => formatPeso(value)
-          }
+          ticks: { callback: value => formatPeso(value) }
         }
       }
     }
   });
 }
 
-function updatePLTable(data) {
+function updatePLTable(pnlData) {
   const table = document.getElementById("plTable");
-  const pnlData = data.pnlData || [];
-
-  if (!table) return;
   table.innerHTML = "";
 
-  if (pnlData.length === 0) {
-    table.innerHTML = "<tr><td colspan='13'>No data available</td></tr>";
+  if (!pnlData || pnlData.length === 0) {
+    table.innerHTML = "<tr><td colspan='13'>No P&L data</td></tr>";
     return;
   }
 
-  const months = monthOrder;
-  const headerRow = `<tr><th>Category</th>${months.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
   const rows = pnlData.map(row => {
-    return `<tr><td>${row.category}</td>${months.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
-  });
-
-  table.innerHTML = headerRow + rows.join("");
-}
-
-function updateSummaryTable(data) {
-  const table = document.getElementById("summaryTable");
-  const summary = data.minorCategoryBreakdown || [];
-
-  if (!table) return;
-
-  if (summary.length === 0) {
-    table.innerHTML = "<tr><td colspan='13'>No data available</td></tr>";
-    return;
-  }
-
-  const headerRow = `<tr><th>Minor Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = summary.map(row => {
     return `<tr><td>${row.category}</td>${monthOrder.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
   });
 
-  table.innerHTML = headerRow + rows.join("");
+  table.innerHTML = header + rows.join("");
+}
+
+function updateSummaryTable(summaryMap) {
+  const table = document.getElementById("summaryTable");
+  table.innerHTML = "";
+
+  if (!summaryMap || Object.keys(summaryMap).length === 0) {
+    table.innerHTML = "<tr><td colspan='13'>No summary data</td></tr>";
+    return;
+  }
+
+  const allCategories = new Set();
+  monthOrder.forEach(month => {
+    if (summaryMap[month]) {
+      Object.keys(summaryMap[month]).forEach(cat => allCategories.add(cat));
+    }
+  });
+
+  const sortedCats = Array.from(allCategories).sort();
+
+  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = sortedCats.map(cat => {
+    const row = `<td>${cat}</td>` + monthOrder.map(m => {
+      const val = summaryMap[m]?.[cat] || 0;
+      return `<td>${formatPeso(val)}</td>`;
+    }).join("");
+    return `<tr>${row}</tr>`;
+  });
+
+  table.innerHTML = header + rows.join("");
+}
+
+function formatPeso(num) {
+  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
 
 function capitalize(str) {
@@ -217,8 +215,10 @@ function categoryLabel(key) {
   }
 }
 
-function formatPeso(num) {
-  return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+function showView(view) {
+  document.getElementById("dashboard").style.display = view === "dashboard" ? "block" : "none";
+  document.getElementById("plSection").style.display = view === "pl" ? "block" : "none";
+  document.getElementById("summarySection").style.display = view === "summary" ? "block" : "none";
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -226,13 +226,12 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("monthSelect").addEventListener("change", fetchData);
   document.getElementById("categorySelect").addEventListener("change", () => {
     const category = document.getElementById("categorySelect").value;
-    fetchData(category);
+    drawGroupedExpenseChart(rawData, category);
   });
 
-  document.getElementById("showSummaryBtn").addEventListener("click", () => {
-    const table = document.getElementById("summaryTable");
-    table.style.display = table.style.display === "none" ? "table" : "none";
-  });
+  document.getElementById("btnDashboard").addEventListener("click", () => showView("dashboard"));
+  document.getElementById("btnPL").addEventListener("click", () => showView("pl"));
+  document.getElementById("btnSummary").addEventListener("click", () => showView("summary"));
 
   fetchData();
 });
