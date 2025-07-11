@@ -93,7 +93,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Sidebar -->
     <div class="sidebar">
       <div class="filters">
         <label for="yearSelect">Year:</label>
@@ -120,8 +119,8 @@
           <option>December</option>
         </select>
 
-        <label for="categoryFilter">Major Category:</label>
-        <select id="categoryFilter">
+        <label for="categorySelect">Major Category:</label>
+        <select id="categorySelect">
           <option value="all" selected>All</option>
           <option value="foodandbeveragespurchases">Food & Beverage</option>
           <option value="fixedexpense">Fixed</option>
@@ -136,22 +135,31 @@
       </div>
 
       <div class="kpis">
-        <div class="kpi">Total Sales: <span id="salesKPI">₱0</span></div>
-        <div class="kpi">Total Expenses: <span id="expensesKPI">₱0</span></div>
-        <div class="kpi">Net Revenue: <span id="revenueKPI">₱0</span></div>
+        <div class="kpi">Sales: <span id="salesKPI">₱0.00</span></div>
+        <div class="kpi">Expenses: <span id="expensesKPI">₱0.00</span></div>
+        <div class="kpi">Revenue: <span id="revenueKPI">₱0.00</span></div>
       </div>
     </div>
 
-    <!-- Content -->
     <div class="content">
       <div class="charts">
-        <canvas id="grouped-expense-chart" height="220"></canvas>
-        <canvas id="sales-expense-chart" height="160"></canvas>
+        <canvas id="grouped-expense-chart" height="250"></canvas>
+        <canvas id="sales-expense-chart" height="180"></canvas>
       </div>
 
       <div id="pnlView">
-        <h3>Profit & Loss Statement</h3>
-        <table id="pnlTable"></table>
+        <h3>Profit and Loss Statement</h3>
+        <table>
+          <tr><th>Category</th><th>Amount</th></tr>
+          <tr><td>Sales</td><td id="pl-sales">₱0.00</td></tr>
+          <tr><td>Cost of Goods Sold</td><td id="pl-cogs">₱0.00</td></tr>
+          <tr><td><strong>Gross Profit</strong></td><td id="pl-gross">₱0.00</td></tr>
+          <tr><td>Operating Expenses</td><td id="pl-opex">₱0.00</td></tr>
+          <tr><td>Fixed Expenses</td><td id="pl-fixed">₱0.00</td></tr>
+          <tr><td>Labor Expenses</td><td id="pl-labor">₱0.00</td></tr>
+          <tr><td>Miscellaneous</td><td id="pl-misc">₱0.00</td></tr>
+          <tr><td><strong>Net Profit</strong></td><td id="pl-net">₱0.00</td></tr>
+        </table>
       </div>
     </div>
   </div>
