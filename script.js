@@ -1,7 +1,9 @@
-const ctxGrouped = document.getElementById("grouped-expense-chart").getContext("2d");
-const ctxSales = document.getElementById("sales-expense-chart").getContext("2d");
+// script.js – Full frontend logic with P&L rendering
 
-let groupedChart, salesChart;
+const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
+const ctxCompare = document.getElementById("monthly-sales-expense-chart").getContext("2d");
+let groupedChart;
+let comparisonChart;
 
 const monthOrder = [
   "january", "february", "march", "april", "may", "june",
@@ -11,189 +13,175 @@ const monthOrder = [
 function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
-  const category = document.getElementById("categoryFilter").value;
-
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      // ✅ Update KPI boxes
       document.getElementById("salesKPI").textContent = formatPeso(data.totalSales);
       document.getElementById("expensesKPI").textContent = formatPeso(data.totalExpenses);
       document.getElementById("revenueKPI").textContent = formatPeso(data.totalRevenue);
 
-      // ✅ Draw charts
-      drawGroupedExpenseChart(data, category);
-      drawSalesVsExpenseChart(data);
-      buildPnLTable(data.pnlData);
+      drawGroupedExpenseChart(data);
+      drawComparisonChart(data);
+      window.currentPL = data.pl; // store for use by P&L button
     })
     .catch(err => console.error("Error fetching data:", err));
 }
 
-function drawGroupedExpenseChart(data, selectedCategory) {
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("yearSelect").addEventListener("change", fetchData);
+  document.getElementById("monthSelect").addEventListener("change", fetchData);
+  document.getElementById("categoryFilter").addEventListener("change", fetchData);
+  document.getElementById("showPLBtn").addEventListener("click", showPL);
+  fetchData();
+});
+
+function drawGroupedExpenseChart(data) {
   const monthly = data.monthlyCategoryTotals;
-  const monthlySales = data.monthlySales;
+  const sales = data.monthlySales;
   const targets = data.targets;
+  const selected = document.getElementById("categoryFilter").value;
 
   const months = monthOrder.filter(m => monthly[m]);
-  const categories = selectedCategory === 'all' ? ["foodandbeveragespurchases", "fixedexpense", "laborexpense", "operatingexpense", "misc"] : [selectedCategory];
-  const colors = ["#86c5ff", "#a0e0a9", "#ffe38d", "#92e3ea", "#bfa6ed"];
+  const categories = {
+    foodandbeveragespurchases: "Food & Bev",
+    fixedexpense: "Fixed",
+    laborexpense: "Labor",
+    operatingexpense: "Operating",
+    misc: "Misc"
+  };
 
-  const datasets = categories.map((cat, i) => {
-    return {
-      label: categoryLabel(cat),
-      data: months.map(m => {
-        const amt = (monthly[m] && monthly[m][cat]) || 0;
-        const sale = monthlySales[m] || 0;
-        return sale > 0 ? (amt / sale) * 100 : 0;
-      }),
-      backgroundColor: colors[i % colors.length],
-      datalabels: {
-        color: '#000',
-        anchor: 'end',
-        align: 'top',
-        formatter: v => v.toFixed(1) + "%"
-      }
-    };
-  });
+  const datasets = [];
+  const lines = [];
+
+  for (let key in categories) {
+    if (selected === "all" || selected === key) {
+      datasets.push({
+        label: categories[key],
+        data: months.map(m => {
+          const amt = (monthly[m]?.[key] || 0);
+          const sale = sales[m] || 1;
+          return (amt / sale) * 100;
+        }),
+        backgroundColor: getColor(key),
+        datalabels: {
+          color: "#000",
+          anchor: "end",
+          align: "top",
+          formatter: v => v.toFixed(1) + "%"
+        }
+      });
+
+      lines.push({
+        type: 'line',
+        data: Array(months.length).fill(targets[key]),
+        borderColor: getColor(key),
+        borderDash: [5, 5],
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        yAxisID: 'y',
+      });
+    }
+  }
 
   if (groupedChart) groupedChart.destroy();
-
-  groupedChart = new Chart(ctxGrouped, {
+  groupedChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: months.map(capitalize),
-      datasets: datasets
+      datasets: [...datasets, ...lines]
     },
     options: {
       responsive: true,
       plugins: {
-        title: {
-          display: true,
-          text: "Monthly Expenses as % of Revenue",
-          font: { size: 16 }
-        },
-        legend: {
-          display: categories.length > 1,
-          position: 'bottom'
-        },
+        title: { display: true, text: "Monthly Expenses as % of Revenue" },
+        legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
+            label: function (ctx) {
+              const percent = ctx.raw.toFixed(1);
+              const sale = sales[monthOrder[ctx.dataIndex]] || 0;
+              const peso = ((percent / 100) * sale).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
+              return `${ctx.dataset.label}: ${percent}% (${peso})`;
+            }
           }
-        },
-        datalabels: {
-          display: true
         }
       },
       scales: {
-        x: {
-          grid: { display: false }
-        },
         y: {
           beginAtZero: true,
           max: 60,
-          title: {
-            display: true,
-            text: "% of Revenue"
-          },
-          grid: { display: false }
-        }
+          grid: { display: false },
+          title: { display: true, text: "% of Revenue" }
+        },
+        x: { grid: { display: false } }
       }
     },
     plugins: [ChartDataLabels]
   });
 }
 
-function drawSalesVsExpenseChart(data) {
-  const months = monthOrder.filter(m => data.monthlySales[m] || data.monthlyExpenseTotals[m]);
-  const sales = months.map(m => data.monthlySales[m] || 0);
-  const expenses = months.map(m => data.monthlyExpenseTotals[m] || 0);
+function drawComparisonChart(data) {
+  const monthlySales = data.monthlySales;
+  const monthlyExpenses = data.monthlyCategoryTotals;
+  const months = monthOrder.filter(m => monthlySales[m]);
 
-  if (salesChart) salesChart.destroy();
+  if (comparisonChart) comparisonChart.destroy();
 
-  salesChart = new Chart(ctxSales, {
-    type: "bar",
+  comparisonChart = new Chart(ctxCompare, {
+    type: 'bar',
     data: {
       labels: months.map(capitalize),
       datasets: [
         {
           label: "Sales",
-          data: sales,
-          backgroundColor: "#4caf50"
+          backgroundColor: "#007bff",
+          data: months.map(m => monthlySales[m] || 0)
         },
         {
           label: "Expenses",
-          data: expenses,
-          backgroundColor: "#f44336"
+          backgroundColor: "#dc3545",
+          data: months.map(m => {
+            const cat = monthlyExpenses[m] || {};
+            return Object.values(cat).reduce((a, b) => a + b, 0);
+          })
         }
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        title: {
-          display: true,
-          text: "Monthly Sales vs Expenses",
-          font: { size: 16 }
-        },
+        title: { display: true, text: "Monthly Sales vs Expenses" },
         legend: { position: 'bottom' }
       },
       scales: {
-        x: { stacked: false },
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: "Amount (₱)"
-          }
-        }
+        y: { beginAtZero: true, grid: { display: false } },
+        x: { grid: { display: false } }
       }
     }
   });
 }
 
-function buildPnLTable(pnlData) {
-  const table = document.getElementById("pnlTable");
-  table.innerHTML = "";
-  if (!pnlData || pnlData.length === 0) return;
+function showPL() {
+  const pl = window.currentPL;
+  if (!pl) return;
 
-  const headers = Object.keys(pnlData[0]);
-  const thead = document.createElement("thead");
-  const tbody = document.createElement("tbody");
-
-  const trHead = document.createElement("tr");
-  headers.forEach(h => {
-    const th = document.createElement("th");
-    th.textContent = capitalize(h);
-    trHead.appendChild(th);
-  });
-  thead.appendChild(trHead);
-
-  pnlData.forEach(row => {
-    const tr = document.createElement("tr");
-    headers.forEach(h => {
-      const td = document.createElement("td");
-      td.textContent = typeof row[h] === 'number' ? formatPeso(row[h]) : row[h];
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-
-  table.appendChild(thead);
-  table.appendChild(tbody);
-}
-
-function categoryLabel(key) {
-  switch (key) {
-    case "foodandbeveragespurchases": return "Food & Beverage";
-    case "fixedexpense": return "Fixed";
-    case "laborexpense": return "Labor";
-    case "operatingexpense": return "Operating";
-    case "misc": return "Misc";
-    default: return key;
-  }
+  const el = document.getElementById("plStatement");
+  el.innerHTML = `
+    <h3>Profit & Loss Statement</h3>
+    <table>
+      <tr><td><strong>Sales</strong></td><td>${formatPeso(pl.sales)}</td></tr>
+      <tr><td>Less: Food & Beverage</td><td>${formatPeso(pl.foodandbeveragespurchases)}</td></tr>
+      <tr><td><strong>Gross Profit</strong></td><td>${formatPeso(pl.gross)}</td></tr>
+      <tr><td>Operating Expense</td><td>${formatPeso(pl.operatingexpense)}</td></tr>
+      <tr><td>Fixed Expense</td><td>${formatPeso(pl.fixedexpense)}</td></tr>
+      <tr><td>Labor Expense</td><td>${formatPeso(pl.laborexpense)}</td></tr>
+      <tr><td>Miscellaneous</td><td>${formatPeso(pl.misc)}</td></tr>
+      <tr><td><strong>Net Profit</strong></td><td>${formatPeso(pl.net)}</td></tr>
+    </table>
+  `;
 }
 
 function formatPeso(num) {
@@ -204,34 +192,12 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function downloadPDF() {
-  const doc = new jspdf.jsPDF('p', 'pt', 'a4');
-  html2canvas(document.querySelector(".charts")).then(canvas => {
-    const imgData = canvas.toDataURL("image/png");
-    const pdfWidth = doc.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    doc.save("dashboard.pdf");
-  });
+function getColor(cat) {
+  return {
+    foodandbeveragespurchases: "#007bff",
+    fixedexpense: "#28a745",
+    laborexpense: "#ffc107",
+    operatingexpense: "#17a2b8",
+    misc: "#6f42c1"
+  }[cat] || "#999";
 }
-
-// Event Listeners
-document.addEventListener("DOMContentLoaded", () => {
-  fetchData();
-  document.getElementById("yearSelect").addEventListener("change", fetchData);
-  document.getElementById("monthSelect").addEventListener("change", fetchData);
-  document.getElementById("categoryFilter").addEventListener("change", fetchData);
-  document.getElementById("downloadBtn").addEventListener("click", downloadPDF);
-
-  document.getElementById("showPnlBtn").addEventListener("click", () => {
-    document.querySelector(".charts").style.display = "none";
-    document.getElementById("pnlView").style.display = "block";
-    document.getElementById("backBtn").style.display = "block";
-  });
-
-  document.getElementById("backBtn").addEventListener("click", () => {
-    document.querySelector(".charts").style.display = "flex";
-    document.getElementById("pnlView").style.display = "none";
-    document.getElementById("backBtn").style.display = "none";
-  });
-});
