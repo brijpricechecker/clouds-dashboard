@@ -25,21 +25,24 @@ function fetchData() {
       } else {
         document.getElementById("sales-expense-chart").style.display = "none";
       }
-      updatePLTable(data.pnlData);
+      updatePLTable(data.plData);
       updateSummaryTable(data.summaryMap);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
 
 function updateKPIs(data, selectedMonth) {
-  const totalSales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
-  let totalExpenses = 0;
-  const categories = data.monthlyCategoryTotals[selectedMonth] || {};
-  for (let k in categories) totalExpenses += categories[k] || 0;
+  const sales = selectedMonth === "all"
+    ? data.totalSales
+    : (data.monthlySales[selectedMonth] || 0);
 
-  document.getElementById("salesKPI").textContent = formatPeso(totalSales);
-  document.getElementById("expensesKPI").textContent = formatPeso(totalExpenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(totalSales - totalExpenses);
+  const expenses = selectedMonth === "all"
+    ? data.totalExpenses
+    : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+
+  document.getElementById("salesKPI").textContent = formatPeso(sales);
+  document.getElementById("expensesKPI").textContent = formatPeso(expenses);
+  document.getElementById("revenueKPI").textContent = formatPeso(sales - expenses);
 }
 
 function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
@@ -158,21 +161,34 @@ function drawSalesVsExpenseChart(data) {
   });
 }
 
-function updatePLTable(pnlData) {
+function updatePLTable(plData) {
   const table = document.getElementById("plTable");
   table.innerHTML = "";
 
-  if (!pnlData || pnlData.length === 0) {
-    table.innerHTML = "<p>No Profit & Loss Data</p>";
+  if (!plData || plData.length === 0) {
+    table.innerHTML = "<tr><td>No Profit & Loss Data</td></tr>";
     return;
   }
 
-  const template = pnlData.map(row => {
-    const total = monthOrder.reduce((sum, m) => sum + (row[m] || 0), 0);
-    return `<div class="pl-row"><strong>${row.category}:</strong> ${formatPeso(total)}</div>`;
-  }).join("");
+  // Build header row
+  const headerRow = `
+    <tr>
+      <th>Line Item</th>
+      ${monthOrder.slice(0, 6).map(m => `<th>${capitalize(m)}</th>`).join("")}
+      <th>Total</th>
+    </tr>
+  `;
 
-  table.innerHTML = `<h3>P&L Summary</h3>${template}`;
+  const rows = plData.map(row => {
+    const monthlyValues = monthOrder.slice(0, 6).map(m => {
+      const val = row[m] || 0;
+      return `<td>${formatPeso(val)}</td>`;
+    });
+    const total = monthOrder.reduce((sum, m) => sum + (row[m] || 0), 0);
+    return `<tr><td><strong>${row.category}</strong></td>${monthlyValues.join("")}<td><strong>${formatPeso(total)}</strong></td></tr>`;
+  });
+
+  table.innerHTML = headerRow + rows.join("");
 }
 
 function updateSummaryTable(summaryMap) {
