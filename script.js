@@ -10,7 +10,7 @@ function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value.toLowerCase();
   const category = document.getElementById("categorySelect").value;
-  const url = `https://script.google.com/macros/s/AKfycbwA2KJz5NisPOpG_KPAKdqxnIY6U2ytD_m0TKOIMU5TICCGcTC5aUEoAaWwZDlf9cwG/exec?year=${year}&month=${month}`;
+  const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
     .then(res => res.json())
