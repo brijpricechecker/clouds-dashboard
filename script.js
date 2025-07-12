@@ -1,4 +1,4 @@
-""let groupedChart, salesExpenseChart;
+let groupedChart, salesExpenseChart;
 let rawData = {};
 
 const monthOrder = [
@@ -19,8 +19,12 @@ function fetchData() {
       updateKPIs(data, month);
       updateCommentary(data, month);
       drawGroupedExpenseChart(data, category, month);
-      if (month === "all") drawSalesVsExpenseChart(data);
-      else document.getElementById("sales-expense-chart-container").style.display = "none";
+      if (month === "all") {
+        document.getElementById("sales-expense-chart").style.display = "block";
+        drawSalesVsExpenseChart(data);
+      } else {
+        document.getElementById("sales-expense-chart").style.display = "none";
+      }
       updatePLTable(data.pnlData);
       updateSummaryTable(data.summaryMap);
     })
@@ -113,7 +117,6 @@ function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
 }
 
 function drawSalesVsExpenseChart(data) {
-  document.getElementById("sales-expense-chart-container").style.display = "block";
   const monthly = data.monthlyCategoryTotals || {};
   const monthlySales = data.monthlySales || {};
   const months = monthOrder.filter(m => monthly[m]);
@@ -203,7 +206,7 @@ function updateSummaryTable(summaryMap) {
 }
 
 function updateCommentary(data, selectedMonth) {
-  const div = document.getElementById("aiCommentary");
+  const div = document.getElementById("aiComment");
   const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales[selectedMonth] || 0;
   const expenses = selectedMonth === "all" ? data.totalExpenses : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
   const revenue = sales - expenses;
@@ -213,7 +216,7 @@ function updateCommentary(data, selectedMonth) {
   else comment += ` The operation broke even for this period.`;
   comment += `\n\nExpenses are primarily driven by ${getTopCategory(data, selectedMonth)}.`;
 
-  div.innerHTML = `<p><strong>AI Insight:</strong> ${comment}</p>`;
+  div.innerHTML = `<p><strong>AI Insight:</strong> ${comment.replace(/\n/g, "<br>")}</p>`;
 }
 
 function getTopCategory(data, month) {
