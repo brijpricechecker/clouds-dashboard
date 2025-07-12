@@ -12,6 +12,7 @@ function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
   const category = document.getElementById("categorySelect").value;
+
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -160,7 +161,7 @@ function updatePLTable(pnlData) {
 
   const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
   const rows = pnlData.map(row => {
-    return `<tr><td>${row.category}</td>${monthOrder.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
+    return `<tr><td>${categoryLabel(row.category)}</td>${monthOrder.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
   });
 
   table.innerHTML = header + rows.join("");
@@ -186,7 +187,7 @@ function updateSummaryTable(summaryMap) {
 
   const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
   const rows = sortedCats.map(cat => {
-    const row = `<td>${cat}</td>` + monthOrder.map(m => {
+    const row = `<td>${categoryLabel(cat)}</td>` + monthOrder.map(m => {
       const val = summaryMap[m]?.[cat] || 0;
       return `<td>${formatPeso(val)}</td>`;
     }).join("");
@@ -211,7 +212,7 @@ function categoryLabel(key) {
     case "laborexpense": return "Labor Expense";
     case "operatingexpense": return "Operating Expense";
     case "misc": return "Miscellaneous";
-    default: return key;
+    default: return capitalize(key);
   }
 }
 
