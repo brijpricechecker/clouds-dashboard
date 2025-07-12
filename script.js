@@ -12,7 +12,6 @@ function fetchData() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
   const category = document.getElementById("categorySelect").value;
-
   const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
 
   fetch(url)
@@ -117,8 +116,8 @@ function drawSalesVsExpenseChart(data) {
 
   const salesData = months.map(m => monthlySales[m] || 0);
   const expensesData = months.map(m => {
-    const categories = monthly[m] || {};
-    return Object.values(categories).reduce((sum, v) => sum + v, 0);
+    const cat = monthly[m] || {};
+    return Object.values(cat).reduce((sum, val) => sum + val, 0);
   });
 
   salesExpenseChart = new Chart(salesCtx, {
@@ -161,7 +160,7 @@ function updatePLTable(pnlData) {
 
   const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
   const rows = pnlData.map(row => {
-    return `<tr><td>${categoryLabel(row.category)}</td>${monthOrder.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
+    return `<tr><td>${row.category}</td>${monthOrder.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
   });
 
   table.innerHTML = header + rows.join("");
@@ -187,7 +186,7 @@ function updateSummaryTable(summaryMap) {
 
   const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
   const rows = sortedCats.map(cat => {
-    const row = `<td>${categoryLabel(cat)}</td>` + monthOrder.map(m => {
+    const row = `<td>${cat}</td>` + monthOrder.map(m => {
       const val = summaryMap[m]?.[cat] || 0;
       return `<td>${formatPeso(val)}</td>`;
     }).join("");
@@ -212,14 +211,21 @@ function categoryLabel(key) {
     case "laborexpense": return "Labor Expense";
     case "operatingexpense": return "Operating Expense";
     case "misc": return "Miscellaneous";
-    default: return capitalize(key);
+    default: return key;
   }
 }
 
 function showView(view) {
-  document.getElementById("dashboard").style.display = view === "dashboard" ? "block" : "none";
-  document.getElementById("plSection").style.display = view === "pl" ? "block" : "none";
-  document.getElementById("summarySection").style.display = view === "summary" ? "block" : "none";
+  document.getElementById("dashboard").classList.remove("active");
+  document.getElementById("plSection").classList.remove("active");
+  document.getElementById("summarySection").classList.remove("active");
+
+  document.getElementById("btnDashboard").classList.remove("active");
+  document.getElementById("btnPL").classList.remove("active");
+  document.getElementById("btnSummary").classList.remove("active");
+
+  document.getElementById(view).classList.add("active");
+  document.getElementById("btn" + view.charAt(0).toUpperCase() + view.slice(1)).classList.add("active");
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -231,8 +237,8 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   document.getElementById("btnDashboard").addEventListener("click", () => showView("dashboard"));
-  document.getElementById("btnPL").addEventListener("click", () => showView("pl"));
-  document.getElementById("btnSummary").addEventListener("click", () => showView("summary"));
+  document.getElementById("btnPL").addEventListener("click", () => showView("plSection"));
+  document.getElementById("btnSummary").addEventListener("click", () => showView("summarySection"));
 
   fetchData();
 });
