@@ -1,5 +1,4 @@
-let ctx, salesCtx;
-let groupedChart, salesExpenseChart;
+""let groupedChart, salesExpenseChart;
 let rawData = {};
 
 const monthOrder = [
@@ -7,37 +6,21 @@ const monthOrder = [
   "july", "august", "september", "october", "november", "december"
 ];
 
-document.addEventListener("DOMContentLoaded", () => {
-  ctx = document.getElementById("grouped-expense-chart").getContext("2d");
-  salesCtx = document.getElementById("sales-expense-chart").getContext("2d");
-
-  document.getElementById("yearSelect").addEventListener("change", fetchData);
-  document.getElementById("monthSelect").addEventListener("change", fetchData);
-  document.getElementById("categorySelect").addEventListener("change", () => {
-    const category = document.getElementById("categorySelect").value;
-    drawGroupedExpenseChart(rawData, category);
-  });
-
-  document.getElementById("btnDashboard").addEventListener("click", () => showView("dashboard"));
-  document.getElementById("btnPL").addEventListener("click", () => showView("pl"));
-  document.getElementById("btnSummary").addEventListener("click", () => showView("summary"));
-
-  fetchData();
-});
-
 function fetchData() {
   const year = document.getElementById("yearSelect").value;
-  const month = document.getElementById("monthSelect").value;
+  const month = document.getElementById("monthSelect").value.toLowerCase();
   const category = document.getElementById("categorySelect").value;
-  const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
+  const url = `https://script.google.com/macros/s/AKfycbwA2KJz5NisPOpG_KPAKdqxnIY6U2ytD_m0TKOIMU5TICCGcTC5aUEoAaWwZDlf9cwG/exec?year=${year}&month=${month}`;
 
   fetch(url)
     .then(res => res.json())
     .then(data => {
       rawData = data;
       updateKPIs(data, month);
-      drawGroupedExpenseChart(data, category);
-      drawSalesVsExpenseChart(data);
+      updateCommentary(data, month);
+      drawGroupedExpenseChart(data, category, month);
+      if (month === "all") drawSalesVsExpenseChart(data);
+      else document.getElementById("sales-expense-chart-container").style.display = "none";
       updatePLTable(data.pnlData);
       updateSummaryTable(data.summaryMap);
     })
@@ -45,22 +28,20 @@ function fetchData() {
 }
 
 function updateKPIs(data, selectedMonth) {
-  const monthKey = selectedMonth.toLowerCase();
-  const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales[monthKey] || 0;
-  const expenses = selectedMonth === "all"
-    ? data.totalExpenses
-    : Object.values(data.monthlyCategoryTotals[monthKey] || {}).reduce((a, b) => a + b, 0);
-  const revenue = sales - expenses;
+  const totalSales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
+  let totalExpenses = 0;
+  const categories = data.monthlyCategoryTotals[selectedMonth] || {};
+  for (let k in categories) totalExpenses += categories[k] || 0;
 
-  document.getElementById("salesKPI").textContent = formatPeso(sales);
-  document.getElementById("expensesKPI").textContent = formatPeso(expenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(revenue);
+  document.getElementById("salesKPI").textContent = formatPeso(totalSales);
+  document.getElementById("expensesKPI").textContent = formatPeso(totalExpenses);
+  document.getElementById("revenueKPI").textContent = formatPeso(totalSales - totalExpenses);
 }
 
-function drawGroupedExpenseChart(data, filterCategory) {
+function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
   const monthly = data.monthlyCategoryTotals || {};
   const monthlySales = data.monthlySales || {};
-  const months = monthOrder.filter(m => monthly[m]);
+  const months = selectedMonth === "all" ? monthOrder.filter(m => monthly[m]) : [selectedMonth];
 
   const categories = ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
   const colors = {
@@ -91,7 +72,7 @@ function drawGroupedExpenseChart(data, filterCategory) {
 
   if (groupedChart) groupedChart.destroy();
 
-  groupedChart = new Chart(ctx, {
+  groupedChart = new Chart(document.getElementById("grouped-expense-chart").getContext("2d"), {
     type: "bar",
     data: {
       labels: months.map(capitalize),
@@ -132,6 +113,7 @@ function drawGroupedExpenseChart(data, filterCategory) {
 }
 
 function drawSalesVsExpenseChart(data) {
+  document.getElementById("sales-expense-chart-container").style.display = "block";
   const monthly = data.monthlyCategoryTotals || {};
   const monthlySales = data.monthlySales || {};
   const months = monthOrder.filter(m => monthly[m]);
@@ -144,7 +126,7 @@ function drawSalesVsExpenseChart(data) {
     return Object.values(categories).reduce((sum, v) => sum + v, 0);
   });
 
-  salesExpenseChart = new Chart(salesCtx, {
+  salesExpenseChart = new Chart(document.getElementById("sales-expense-chart").getContext("2d"), {
     type: "bar",
     data: {
       labels: months.map(capitalize),
@@ -178,16 +160,16 @@ function updatePLTable(pnlData) {
   table.innerHTML = "";
 
   if (!pnlData || pnlData.length === 0) {
-    table.innerHTML = "<tr><td colspan='13'>No P&L data</td></tr>";
+    table.innerHTML = "<p>No Profit & Loss Data</p>";
     return;
   }
 
-  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = pnlData.map(row => {
-    return `<tr><td>${row.category}</td>${monthOrder.map(m => `<td>${formatPeso(row[m] || 0)}</td>`).join("")}</tr>`;
-  });
+  const template = pnlData.map(row => {
+    const total = monthOrder.reduce((sum, m) => sum + (row[m] || 0), 0);
+    return `<div class="pl-row"><strong>${row.category}:</strong> ${formatPeso(total)}</div>`;
+  }).join("");
 
-  table.innerHTML = header + rows.join("");
+  table.innerHTML = `<h3>P&L Summary</h3>${template}`;
 }
 
 function updateSummaryTable(summaryMap) {
@@ -220,6 +202,32 @@ function updateSummaryTable(summaryMap) {
   table.innerHTML = header + rows.join("");
 }
 
+function updateCommentary(data, selectedMonth) {
+  const div = document.getElementById("aiCommentary");
+  const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales[selectedMonth] || 0;
+  const expenses = selectedMonth === "all" ? data.totalExpenses : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+  const revenue = sales - expenses;
+  let comment = `Total sales for the selected period are ${formatPeso(sales)}, while expenses reached ${formatPeso(expenses)}.`;
+  if (revenue > 0) comment += ` This results in a net positive revenue of ${formatPeso(revenue)}, indicating profitability.`;
+  else if (revenue < 0) comment += ` The period ran at a loss of ${formatPeso(-revenue)}, highlighting areas to manage costs.`;
+  else comment += ` The operation broke even for this period.`;
+  comment += `\n\nExpenses are primarily driven by ${getTopCategory(data, selectedMonth)}.`;
+
+  div.innerHTML = `<p><strong>AI Insight:</strong> ${comment}</p>`;
+}
+
+function getTopCategory(data, month) {
+  const catData = data.monthlyCategoryTotals[month] || {};
+  let max = 0, top = "";
+  for (let k in catData) {
+    if (catData[k] > max) {
+      max = catData[k];
+      top = categoryLabel(k);
+    }
+  }
+  return top || "various categories";
+}
+
 function formatPeso(num) {
   return Number(num).toLocaleString("en-PH", { style: 'currency', currency: 'PHP' });
 }
@@ -244,3 +252,19 @@ function showView(view) {
   document.getElementById("plSection").style.display = view === "pl" ? "block" : "none";
   document.getElementById("summarySection").style.display = view === "summary" ? "block" : "none";
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("yearSelect").addEventListener("change", fetchData);
+  document.getElementById("monthSelect").addEventListener("change", fetchData);
+  document.getElementById("categorySelect").addEventListener("change", () => {
+    const category = document.getElementById("categorySelect").value;
+    const month = document.getElementById("monthSelect").value.toLowerCase();
+    drawGroupedExpenseChart(rawData, category, month);
+  });
+
+  document.getElementById("btnDashboard").addEventListener("click", () => showView("dashboard"));
+  document.getElementById("btnPL").addEventListener("click", () => showView("pl"));
+  document.getElementById("btnSummary").addEventListener("click", () => showView("summary"));
+
+  fetchData();
+});
