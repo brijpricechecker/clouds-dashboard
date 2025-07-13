@@ -10,8 +10,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const yearSelect = document.getElementById("yearSelect");
   const monthSelect = document.getElementById("monthSelect");
 
-  const categoryFilter = document.getElementById("categoryFilter");
-
   const salesKPI = document.getElementById("salesKPI");
   const expensesKPI = document.getElementById("expensesKPI");
   const revenueKPI = document.getElementById("revenueKPI");
@@ -41,12 +39,8 @@ document.addEventListener("DOMContentLoaded", function () {
   yearSelect.addEventListener("change", fetchData);
   monthSelect.addEventListener("change", fetchData);
 
-  if (categoryFilter) {
-    categoryFilter.addEventListener("change", () => renderCharts(dataCache));
-  }
-
   function formatMoney(value) {
-    if (value === "" || value === null || isNaN(value)) return "";
+    if (value === "" || value === null || isNaN(value)) return "₱0.00";
     return "₱" + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 });
   }
 
@@ -60,29 +54,16 @@ document.addEventListener("DOMContentLoaded", function () {
       const result = await response.json();
       dataCache = result;
 
-      const kpi = result.kpis || result.kpi || {};
-      salesKPI.textContent = formatMoney(kpi.totalSales);
-      expensesKPI.textContent = formatMoney(kpi.totalExpenses);
-      revenueKPI.textContent = formatMoney(kpi.revenue);
-      cashoutKPI.textContent = formatMoney(kpi.cashout);
+      // Update KPIs
+      salesKPI.textContent = formatMoney(result.kpis?.totalSales);
+      expensesKPI.textContent = formatMoney(result.kpis?.totalExpenses);
+      revenueKPI.textContent = formatMoney(result.kpis?.revenue);
+      cashoutKPI.textContent = formatMoney(result.kpis?.cashout);
 
-      renderCategoryFilter(result.expenseChart?.groups || []);
       renderCharts(result);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
-  }
-
-  function renderCategoryFilter(groups) {
-    if (!categoryFilter) return;
-
-    categoryFilter.innerHTML = `<option value="all">All</option>`;
-    groups.forEach(group => {
-      const opt = document.createElement("option");
-      opt.value = group.name;
-      opt.textContent = group.name;
-      categoryFilter.appendChild(opt);
-    });
   }
 
   function renderCharts(data) {
@@ -92,29 +73,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const months = data.expenseChart?.months || [];
     const expenseGroups = data.expenseChart?.groups || [];
 
-    const selectedCategory = categoryFilter?.value || "all";
-    const filteredGroups = selectedCategory === "all"
-      ? expenseGroups
-      : expenseGroups.filter(g => g.name === selectedCategory);
-
-    const categoryColors = {
-      "LABOR": "#4B49AC",
-      "OPERATING": "#98BDFF",
-      "COGS": "#6F42C1",
-      "MISC": "#34B1AA"
-    };
-
+    // Clear old charts
     if (window.expenseChart) window.expenseChart.destroy();
     if (window.salesExpenseChart) window.salesExpenseChart.destroy();
 
+    // Chart 1: Expense % of Sales
     window.expenseChart = new Chart(ctx1, {
       type: "bar",
       data: {
         labels: months,
-        datasets: filteredGroups.map(group => ({
+        datasets: expenseGroups.map(group => ({
           label: group.name,
-          data: group.percentages || group.values || [],
-          backgroundColor: categoryColors[group.name.toUpperCase()] || "rgba(100,100,200,0.5)",
+          data: group.values,
+          backgroundColor: group.color
         }))
       },
       options: {
@@ -123,14 +94,13 @@ document.addEventListener("DOMContentLoaded", function () {
           legend: { position: "top" },
           tooltip: {
             callbacks: {
-              label: ctx => ctx.dataset.label + ": " + (ctx.raw ?? 0).toFixed(2) + "%"
+              label: ctx => ctx.dataset.label + ": " + ctx.parsed.y.toFixed(2) + "%"
             }
           }
         },
         scales: {
           y: {
             beginAtZero: true,
-            max: 100,
             ticks: {
               callback: value => value + "%"
             }
@@ -139,6 +109,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
+    // Chart 2: Sales vs Expenses (empty for now unless you add matching backend)
     window.salesExpenseChart = new Chart(ctx2, {
       type: "bar",
       data: {
@@ -146,12 +117,12 @@ document.addEventListener("DOMContentLoaded", function () {
         datasets: [
           {
             label: "Sales",
-            data: data.salesExpense?.sales || [],
+            data: [data.kpis?.totalSales || 0],
             backgroundColor: "#3B8FF3"
           },
           {
             label: "Expenses",
-            data: data.salesExpense?.expenses || [],
+            data: [data.kpis?.totalExpenses || 0],
             backgroundColor: "#F3797E"
           }
         ]
@@ -163,7 +134,6 @@ document.addEventListener("DOMContentLoaded", function () {
         },
         scales: {
           y: {
-            beginAtZero: true,
             ticks: {
               callback: value => "₱" + value.toLocaleString()
             }
@@ -200,8 +170,8 @@ document.addEventListener("DOMContentLoaded", function () {
     yearSelect.value = currentYear;
   }
 
-  // Setup
+  // Initialize
   populateYearDropdown();
-  showSection("dashboard"); // Set dashboard as default
+  showSection("dashboard");
   fetchData();
 });
