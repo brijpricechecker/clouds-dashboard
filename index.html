@@ -5,91 +5,100 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Clouds Financial Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
-    header { background: #222; color: white; padding: 1em; text-align: center; }
-    .tabs { display: flex; justify-content: center; background: #ddd; padding: 10px; gap: 10px; }
-    .tabs button { padding: 10px 15px; font-weight: bold; cursor: pointer; }
-
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+    header { background: #333; color: white; padding: 1em; text-align: center; }
+    .tab-buttons { display: flex; justify-content: center; background: #eee; padding: 10px; gap: 10px; }
+    .tab-buttons button { padding: 10px 20px; font-weight: bold; cursor: pointer; }
     .section { display: none; padding: 20px; }
-    .active { display: block; }
-
-    .kpi-boxes { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
-    .kpi { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); flex: 1; min-width: 180px; }
-    .kpi h3 { margin: 0 0 5px; font-size: 14px; color: #666; }
-    .kpi p { margin: 0; font-size: 20px; font-weight: bold; }
-
-    canvas { background: white; border-radius: 10px; margin-top: 30px; }
-    select { padding: 5px 10px; margin: 10px 10px 20px 0; }
-
-    #plTable, #reportContainer { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); margin-top: 20px; }
+    .kpi-boxes { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+    .kpi { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); flex: 1; min-width: 150px; }
+    .kpi h3 { margin: 0 0 10px; font-size: 14px; color: #777; }
+    .kpi p { margin: 0; font-size: 18px; font-weight: bold; }
+    .chart-container { margin-top: 20px; }
+    canvas { background: white; border-radius: 10px; }
+    #reportTable { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+    #reportTable th, #reportTable td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+    #reportTable th { background: #f2f2f2; }
+    select { padding: 5px 10px; margin-right: 10px; }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>Clouds Financial Dashboard</h1>
-</header>
+  <header>
+    <h1>Clouds Restaurant Financial Dashboard</h1>
+  </header>
 
-<div class="tabs">
-  <button id="btnDashboard">Dashboard</button>
-  <button id="btnPL">Profit & Loss</button>
-  <button id="btnReport">Sales and Expense Report</button>
-</div>
-
-<div class="section active" id="dashboard">
-  <div>
-    <select id="yearSelect"></select>
-    <select id="monthSelect">
-      <option value="all">All Months</option>
-      <option value="january">January</option>
-      <option value="february">February</option>
-      <option value="march">March</option>
-      <option value="april">April</option>
-      <option value="may">May</option>
-      <option value="june">June</option>
-      <option value="july">July</option>
-      <option value="august">August</option>
-      <option value="september">September</option>
-      <option value="october">October</option>
-      <option value="november">November</option>
-      <option value="december">December</option>
-    </select>
+  <div class="tab-buttons">
+    <button id="btnDashboard">Dashboard</button>
+    <button id="btnPL">Profit & Loss</button>
+    <button id="btnReport">Sales and Expense Report</button>
   </div>
 
-  <div class="kpi-boxes">
-    <div class="kpi">
-      <h3>Total Sales</h3>
-      <p id="salesKPI">₱0.00</p>
+  <div class="section" id="dashboard">
+    <div style="margin-bottom: 15px;">
+      <select id="yearSelect"></select>
+      <select id="monthSelect">
+        <option value="all">All Months</option>
+        <option value="january">January</option>
+        <option value="february">February</option>
+        <option value="march">March</option>
+        <option value="april">April</option>
+        <option value="may">May</option>
+        <option value="june">June</option>
+        <option value="july">July</option>
+        <option value="august">August</option>
+        <option value="september">September</option>
+        <option value="october">October</option>
+        <option value="november">November</option>
+        <option value="december">December</option>
+      </select>
+      <select id="categorySelect">
+        <option value="all">All Categories</option>
+      </select>
     </div>
-    <div class="kpi">
-      <h3>Total Expenses</h3>
-      <p id="expensesKPI">₱0.00</p>
+
+    <div class="kpi-boxes">
+      <div class="kpi">
+        <h3>Total Sales</h3>
+        <p id="salesKPI">₱0.00</p>
+      </div>
+      <div class="kpi">
+        <h3>Total Expenses</h3>
+        <p id="expensesKPI">₱0.00</p>
+      </div>
+      <div class="kpi">
+        <h3>Revenue</h3>
+        <p id="revenueKPI">₱0.00</p>
+      </div>
+      <div class="kpi">
+        <h3>Total Cashout Expenditures</h3>
+        <p id="cashoutKPI">₱0.00</p>
+      </div>
     </div>
-    <div class="kpi">
-      <h3>Revenue</h3>
-      <p id="revenueKPI">₱0.00</p>
+
+    <div class="chart-container">
+      <h3>Expense Categories (% of Sales)</h3>
+      <canvas id="grouped-expense-chart" height="120"></canvas>
     </div>
-    <div class="kpi">
-      <h3>Total Cashout Expenditures</h3>
-      <p id="cashoutKPI">₱0.00</p>
+
+    <div class="chart-container" style="margin-top:40px;">
+      <h3>Sales vs. Total Expenses</h3>
+      <canvas id="sales-expense-chart" height="120"></canvas>
     </div>
   </div>
 
-  <canvas id="grouped-expense-chart" height="100"></canvas>
-  <canvas id="sales-expense-chart" height="100"></canvas>
-</div>
+  <div class="section" id="plSection">
+    <h2>Pro-Forma Profit & Loss Statement</h2>
+    <div id="plTable">Loading...</div>
+  </div>
 
-<div class="section" id="plSection">
-  <h2>Profit & Loss Statement</h2>
-  <div id="plTable">Loading...</div>
-</div>
+  <div class="section" id="reportSection">
+    <h2>Sales and Expense Report</h2>
+    <div id="reportContainer">Loading...</div>
+  </div>
 
-<div class="section" id="reportSection">
-  <h2>Sales and Expense Report</h2>
-  <div id="reportContainer">Loading...</div>
-</div>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
