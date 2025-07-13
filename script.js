@@ -2,8 +2,7 @@ let groupedChart, salesExpenseChart;
 let rawData = {};
 
 const monthOrder = [
-  "january", "february", "march", "april", "may", "june",
-  "july", "august", "september", "october", "november", "december"
+  "january", "february", "march", "april", "may", "june", "july"
 ];
 
 function fetchData() {
@@ -25,22 +24,32 @@ function fetchData() {
       } else {
         document.getElementById("sales-expense-chart").style.display = "none";
       }
-      updatePLTable(data.pnlData);
+      updatePLTable(data.plData);
       updateSummaryTable(data.summaryMap);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
 
 function updateKPIs(data, selectedMonth) {
-  const sales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
-  const expenses = selectedMonth === "all"
-    ? data.totalExpenses
-    : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
-  const revenue = sales - expenses;
+  const totalSales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
+  const totalExpenses = selectedMonth === "all" ? data.totalExpenses : calculateMonthlyExpenses(data.summaryMap, selectedMonth);
+  const totalCashouts = selectedMonth === "all"
+    ? (data.summaryMap["totalcashouts"]?.total || 0)
+    : (data.summaryMap["totalcashouts"]?.[selectedMonth] || 0);
 
-  document.getElementById("salesKPI").textContent = formatPeso(sales);
-  document.getElementById("expensesKPI").textContent = formatPeso(expenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(revenue);
+  document.getElementById("salesKPI").textContent = formatPeso(totalSales);
+  document.getElementById("expensesKPI").textContent = formatPeso(totalExpenses);
+  document.getElementById("revenueKPI").textContent = formatPeso(totalSales - totalExpenses);
+  document.getElementById("cashoutKPI").textContent = formatPeso(totalCashouts);
+}
+
+function calculateMonthlyExpenses(summaryMap, selectedMonth) {
+  const keys = ["laborexpense", "operatingexpense", "fixedexpense", "misc", "cogs"];
+  let total = 0;
+  for (const key of keys) {
+    total += summaryMap[key]?.[selectedMonth] || 0;
+  }
+  return total;
 }
 
 function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
@@ -70,7 +79,7 @@ function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
     datalabels: {
       anchor: "end",
       align: "top",
-      formatter: v => v.toFixed(1) + "%",
+      formatter: v => v ? v.toFixed(1) + "%" : "",
       color: "#000"
     }
   }));
@@ -159,31 +168,25 @@ function drawSalesVsExpenseChart(data) {
   });
 }
 
-function updatePLTable(pnlData) {
+function updatePLTable(plData) {
   const table = document.getElementById("plTable");
   table.innerHTML = "";
 
-  if (!pnlData || pnlData.length === 0) {
-    table.innerHTML = "<tr><td colspan='13'>No Profit & Loss Data</td></tr>";
+  if (!plData || plData.length === 0) {
+    table.innerHTML = "<tr><td>No Profit & Loss Data</td></tr>";
     return;
   }
 
-  const headerRow = `<tr>
-    <th>Category</th>
-    ${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}
-    <th>Total</th>
-  </tr>`;
-
-  const rows = pnlData.map(row => {
-    const total = monthOrder.reduce((sum, m) => sum + (row[m] || 0), 0);
-    const cells = monthOrder.map(m => {
+  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}<th>Total</th></tr>`;
+  const rows = plData.map(row => {
+    const monthlyCells = monthOrder.map(m => {
       const val = row[m] || 0;
       return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
     }).join("");
-    return `<tr><td>${row.category}</td>${cells}<td>${formatPeso(total)}</td></tr>`;
+    return `<tr><td>${row.category}</td>${monthlyCells}<td>${formatPeso(row.total || 0)}</td></tr>`;
   });
 
-  table.innerHTML = headerRow + rows.join("");
+  table.innerHTML = header + rows.join("");
 }
 
 function updateSummaryTable(summaryMap) {
@@ -195,29 +198,23 @@ function updateSummaryTable(summaryMap) {
     return;
   }
 
-  const categoriesByMain = {};
-  for (const month of monthOrder) {
-    const cats = summaryMap[month] || {};
-    for (const [fullCat, value] of Object.entries(cats)) {
-      const [main, sub] = fullCat.split(" | ");
-      if (!categoriesByMain[main]) categoriesByMain[main] = {};
-      if (!categoriesByMain[main][sub]) categoriesByMain[main][sub] = {};
-      categoriesByMain[main][sub][month] = value;
+  const allCategories = new Set();
+  monthOrder.forEach(month => {
+    if (summaryMap[month]) {
+      Object.keys(summaryMap[month]).forEach(cat => allCategories.add(cat));
     }
-  }
+  });
 
-  const header = `<tr><th>Main Category > Subcategory</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = [];
+  const sortedCats = Array.from(allCategories).sort();
 
-  for (const main in categoriesByMain) {
-    for (const sub in categoriesByMain[main]) {
-      const row = monthOrder.map(m => {
-        const val = categoriesByMain[main][sub][m] || 0;
-        return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
-      }).join("");
-      rows.push(`<tr><td>${main} > ${sub}</td>${row}</tr>`);
-    }
-  }
+  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = sortedCats.map(cat => {
+    const row = `<td>${categoryLabel(cat)}</td>` + monthOrder.map(m => {
+      const val = summaryMap[m]?.[cat] || 0;
+      return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
+    }).join("");
+    return `<tr>${row}</tr>`;
+  });
 
   table.innerHTML = header + rows.join("");
 }
@@ -225,14 +222,13 @@ function updateSummaryTable(summaryMap) {
 function updateCommentary(data, selectedMonth) {
   const div = document.getElementById("aiComment");
   const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales[selectedMonth] || 0;
-  const expenses = selectedMonth === "all" ? data.totalExpenses : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+  const expenses = selectedMonth === "all" ? data.totalExpenses : calculateMonthlyExpenses(data.summaryMap, selectedMonth);
   const revenue = sales - expenses;
   let comment = `Total sales for the selected period are ${formatPeso(sales)}, while expenses reached ${formatPeso(expenses)}.`;
   if (revenue > 0) comment += ` This results in a net positive revenue of ${formatPeso(revenue)}, indicating profitability.`;
   else if (revenue < 0) comment += ` The period ran at a loss of ${formatPeso(-revenue)}, highlighting areas to manage costs.`;
   else comment += ` The operation broke even for this period.`;
-
-  comment += ` Expenses are primarily driven by ${getTopCategory(data, selectedMonth)}.`;
+  comment += `\n\nTop cost driver is ${getTopCategory(data, selectedMonth)}.`;
 
   div.innerHTML = `<p><strong>AI Insight:</strong> ${comment.replace(/\n/g, "<br>")}</p>`;
 }
@@ -264,6 +260,7 @@ function categoryLabel(key) {
     case "laborexpense": return "Labor Expense";
     case "operatingexpense": return "Operating Expense";
     case "misc": return "Miscellaneous";
+    case "totalcashouts": return "Total Cashout Expenditures";
     default: return key;
   }
 }
