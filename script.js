@@ -97,7 +97,8 @@ function renderCharts(data) {
             label: ctx => {
               const percent = ctx.parsed.y.toFixed(2) + "%";
               const amount = data.kpis?.totalSales
-                ? "₱" + ((ctx.parsed.y / 100) * data.kpis.totalSales).toLocaleString(undefined, { minimumFractionDigits: 2 })
+ //                ? "₱" + ((ctx.parsed.y / 100) * data.kpis.totalSales).toLocaleString(undefined, { minimumFractionDigits: 2 })
+                ? "₱" + ((ctx.parsed.y) * data.kpis.totalSales).toLocaleString(undefined, { minimumFractionDigits: 2 })
                 : "₱0.00";
               return `${ctx.dataset.label}: ${percent} (${amount})`;
             }
