@@ -1,4 +1,4 @@
-""document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
   const dashboard = document.getElementById("dashboard");
   const plSection = document.getElementById("plSection");
   const reportSection = document.getElementById("reportSection");
@@ -40,7 +40,7 @@
   monthSelect.addEventListener("change", fetchData);
 
   function formatMoney(value) {
-    if (value === "" || value === null || isNaN(value)) return "";
+    if (value === "" || value === null || isNaN(value)) return "₱0.00";
     return "₱" + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 });
   }
 
@@ -52,60 +52,48 @@
       const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
       const response = await fetch(url);
       const result = await response.json();
+
       dataCache = result;
 
-      // Update KPI
-      salesKPI.textContent = formatMoney(result.kpis?.totalSales);
-      expensesKPI.textContent = formatMoney(result.kpis?.totalExpenses);
-      revenueKPI.textContent = formatMoney(result.kpis?.revenue);
-      cashoutKPI.textContent = formatMoney(result.kpis?.cashout);
+      // Update KPIs
+      salesKPI.textContent = formatMoney(result.kpi?.totalSales);
+      expensesKPI.textContent = formatMoney(result.kpi?.totalExpenses);
+      revenueKPI.textContent = formatMoney(result.kpi?.revenue);
+      cashoutKPI.textContent = formatMoney(result.kpi?.cashout);
 
+      // Update Charts
       renderCharts(result);
+
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   }
 
   function renderCharts(data) {
-    const ctx1 = document.getElementById("grouped-expense-chart")?.getContext("2d");
-    const ctx2 = document.getElementById("sales-expense-chart")?.getContext("2d");
-
-    if (!ctx1 || !ctx2) return;
-
-    const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE"];
-
-    const salesData = months.map(m => data.kpiMonths?.[m]?.totalSales || 0);
-    const expenseData = months.map(m => data.kpiMonths?.[m]?.totalExpenses || 0);
-
-    const groupLabels = ["LABOR EXPENSE", "OPERATING EXPENSE", "FIXED EXPENSE", "MISC EXPENSE", "COGS"];
-    const groupColors = ["#4caf50", "#2196f3", "#ff9800", "#9c27b0", "#f44336"];
-
-    const groupedExpenseData = groupLabels.map((label, i) => {
-      return {
-        name: label,
-        values: months.map(m => data.kpiMonths?.[m]?.[label] || 0),
-        color: groupColors[i]
-      };
-    });
+    const ctx1 = document.getElementById("grouped-expense-chart").getContext("2d");
+    const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
 
     if (window.expenseChart) window.expenseChart.destroy();
     if (window.salesExpenseChart) window.salesExpenseChart.destroy();
+
+    const months = data.expenseChart?.months || [];
+    const expenseGroups = data.expenseChart?.groups || [];
 
     window.expenseChart = new Chart(ctx1, {
       type: "bar",
       data: {
         labels: months,
-        datasets: groupedExpenseData.map(group => ({
+        datasets: expenseGroups.map(group => ({
           label: group.name,
           data: group.values,
-          backgroundColor: group.color,
+          backgroundColor: group.color || "rgba(100, 100, 200, 0.6)"
         }))
       },
       options: {
         responsive: true,
         plugins: {
           legend: { position: "top" },
-          tooltip: { mode: "index", intersect: false },
+          tooltip: { mode: "index", intersect: false }
         },
         scales: {
           y: {
@@ -117,6 +105,9 @@
       }
     });
 
+    const sales = data.salesExpense?.sales || [];
+    const expenses = data.salesExpense?.expenses || [];
+
     window.salesExpenseChart = new Chart(ctx2, {
       type: "line",
       data: {
@@ -124,14 +115,16 @@
         datasets: [
           {
             label: "Sales",
-            data: salesData,
+            data: sales,
             borderColor: "green",
+            borderWidth: 2,
             fill: false
           },
           {
             label: "Expenses",
-            data: expenseData,
+            data: expenses,
             borderColor: "red",
+            borderWidth: 2,
             fill: false
           }
         ]
@@ -155,20 +148,19 @@
   function renderPL() {
     if (!dataCache || !dataCache.plHTML) {
       plTable.innerHTML = "<p>No Profit & Loss Data</p>";
-      return;
+    } else {
+      plTable.innerHTML = dataCache.plHTML;
     }
-    plTable.innerHTML = dataCache.plHTML;
   }
 
   function renderReport() {
     if (!dataCache || !dataCache.reportHTML) {
       reportContainer.innerHTML = "<p>No Sales and Expense Report Found</p>";
-      return;
+    } else {
+      reportContainer.innerHTML = dataCache.reportHTML;
     }
-    reportContainer.innerHTML = dataCache.reportHTML;
   }
 
-  // Initial setup
   function populateYearDropdown() {
     const currentYear = new Date().getFullYear();
     for (let y = currentYear - 2; y <= currentYear + 1; y++) {
