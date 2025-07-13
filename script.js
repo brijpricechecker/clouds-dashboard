@@ -2,7 +2,8 @@ let groupedChart, salesExpenseChart;
 let rawData = {};
 
 const monthOrder = [
-  "january", "february", "march", "april", "may", "june"
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december"
 ];
 
 function fetchData() {
@@ -24,21 +25,22 @@ function fetchData() {
       } else {
         document.getElementById("sales-expense-chart").style.display = "none";
       }
-      updatePLTable(data.plData);
+      updatePLTable(data.pnlData);
       updateSummaryTable(data.summaryMap);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
 
 function updateKPIs(data, selectedMonth) {
-  const totalSales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
-  const totalExpenses = selectedMonth === "all"
+  const sales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
+  const expenses = selectedMonth === "all"
     ? data.totalExpenses
     : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+  const revenue = sales - expenses;
 
-  document.getElementById("salesKPI").textContent = formatPeso(totalSales);
-  document.getElementById("expensesKPI").textContent = formatPeso(totalExpenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(totalSales - totalExpenses);
+  document.getElementById("salesKPI").textContent = formatPeso(sales);
+  document.getElementById("expensesKPI").textContent = formatPeso(expenses);
+  document.getElementById("revenueKPI").textContent = formatPeso(revenue);
 }
 
 function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
@@ -162,20 +164,26 @@ function updatePLTable(pnlData) {
   table.innerHTML = "";
 
   if (!pnlData || pnlData.length === 0) {
-    table.innerHTML = "<p>No Profit & Loss Data</p>";
+    table.innerHTML = "<tr><td colspan='13'>No Profit & Loss Data</td></tr>";
     return;
   }
 
-  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const headerRow = `<tr>
+    <th>Category</th>
+    ${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}
+    <th>Total</th>
+  </tr>`;
+
   const rows = pnlData.map(row => {
+    const total = monthOrder.reduce((sum, m) => sum + (row[m] || 0), 0);
     const cells = monthOrder.map(m => {
       const val = row[m] || 0;
-      return `<td>${val ? formatPeso(val) : ""}</td>`;
+      return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
     }).join("");
-    return `<tr><td><strong>${row.category}</strong></td>${cells}</tr>`;
+    return `<tr><td>${row.category}</td>${cells}<td>${formatPeso(total)}</td></tr>`;
   });
 
-  table.innerHTML = header + rows.join("");
+  table.innerHTML = headerRow + rows.join("");
 }
 
 function updateSummaryTable(summaryMap) {
@@ -187,22 +195,29 @@ function updateSummaryTable(summaryMap) {
     return;
   }
 
-  const allKeys = new Set();
-  Object.values(summaryMap).forEach(monthData => {
-    Object.keys(monthData).forEach(key => allKeys.add(key));
-  });
+  const categoriesByMain = {};
+  for (const month of monthOrder) {
+    const cats = summaryMap[month] || {};
+    for (const [fullCat, value] of Object.entries(cats)) {
+      const [main, sub] = fullCat.split(" | ");
+      if (!categoriesByMain[main]) categoriesByMain[main] = {};
+      if (!categoriesByMain[main][sub]) categoriesByMain[main][sub] = {};
+      categoriesByMain[main][sub][month] = value;
+    }
+  }
 
-  const sorted = Array.from(allKeys).sort();
+  const header = `<tr><th>Main Category > Subcategory</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = [];
 
-  const header = `<tr><th>Main Category</th><th>Subcategory</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = sorted.map(k => {
-    const [main, sub] = k.split("||");
-    const cells = monthOrder.map(m => {
-      const val = summaryMap[m]?.[k] || 0;
-      return `<td>${val ? formatPeso(val) : ""}</td>`;
-    }).join("");
-    return `<tr><td>${main}</td><td>${sub}</td>${cells}</tr>`;
-  });
+  for (const main in categoriesByMain) {
+    for (const sub in categoriesByMain[main]) {
+      const row = monthOrder.map(m => {
+        const val = categoriesByMain[main][sub][m] || 0;
+        return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
+      }).join("");
+      rows.push(`<tr><td>${main} > ${sub}</td>${row}</tr>`);
+    }
+  }
 
   table.innerHTML = header + rows.join("");
 }
@@ -210,15 +225,14 @@ function updateSummaryTable(summaryMap) {
 function updateCommentary(data, selectedMonth) {
   const div = document.getElementById("aiComment");
   const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales[selectedMonth] || 0;
-  const expenses = selectedMonth === "all"
-    ? data.totalExpenses
-    : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+  const expenses = selectedMonth === "all" ? data.totalExpenses : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
   const revenue = sales - expenses;
   let comment = `Total sales for the selected period are ${formatPeso(sales)}, while expenses reached ${formatPeso(expenses)}.`;
-  if (revenue > 0) comment += ` Net revenue of ${formatPeso(revenue)} indicates profitability.`;
-  else if (revenue < 0) comment += ` The period ran at a loss of ${formatPeso(-revenue)}.`;
-  else comment += ` The operation broke even.`;
-  comment += `\n\nHighest cost contributor: ${getTopCategory(data, selectedMonth)}.`;
+  if (revenue > 0) comment += ` This results in a net positive revenue of ${formatPeso(revenue)}, indicating profitability.`;
+  else if (revenue < 0) comment += ` The period ran at a loss of ${formatPeso(-revenue)}, highlighting areas to manage costs.`;
+  else comment += ` The operation broke even for this period.`;
+
+  comment += ` Expenses are primarily driven by ${getTopCategory(data, selectedMonth)}.`;
 
   div.innerHTML = `<p><strong>AI Insight:</strong> ${comment.replace(/\n/g, "<br>")}</p>`;
 }
