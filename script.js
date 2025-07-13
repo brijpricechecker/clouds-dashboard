@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+""document.addEventListener("DOMContentLoaded", function () {
   const dashboard = document.getElementById("dashboard");
   const plSection = document.getElementById("plSection");
   const reportSection = document.getElementById("reportSection");
@@ -67,13 +67,27 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderCharts(data) {
-    const ctx1 = document.getElementById("grouped-expense-chart").getContext("2d");
-    const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
+    const ctx1 = document.getElementById("grouped-expense-chart")?.getContext("2d");
+    const ctx2 = document.getElementById("sales-expense-chart")?.getContext("2d");
 
-    const months = data.expenseChart?.months || [];
-    const expenseGroups = data.expenseChart?.groups || [];
+    if (!ctx1 || !ctx2) return;
 
-    // Destroy existing charts if any
+    const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE"];
+
+    const salesData = months.map(m => data.kpiMonths?.[m]?.totalSales || 0);
+    const expenseData = months.map(m => data.kpiMonths?.[m]?.totalExpenses || 0);
+
+    const groupLabels = ["LABOR EXPENSE", "OPERATING EXPENSE", "FIXED EXPENSE", "MISC EXPENSE", "COGS"];
+    const groupColors = ["#4caf50", "#2196f3", "#ff9800", "#9c27b0", "#f44336"];
+
+    const groupedExpenseData = groupLabels.map((label, i) => {
+      return {
+        name: label,
+        values: months.map(m => data.kpiMonths?.[m]?.[label] || 0),
+        color: groupColors[i]
+      };
+    });
+
     if (window.expenseChart) window.expenseChart.destroy();
     if (window.salesExpenseChart) window.salesExpenseChart.destroy();
 
@@ -81,10 +95,10 @@ document.addEventListener("DOMContentLoaded", function () {
       type: "bar",
       data: {
         labels: months,
-        datasets: expenseGroups.map(group => ({
+        datasets: groupedExpenseData.map(group => ({
           label: group.name,
           data: group.values,
-          backgroundColor: group.color || "rgba(100,100,200,0.5)",
+          backgroundColor: group.color,
         }))
       },
       options: {
@@ -110,13 +124,13 @@ document.addEventListener("DOMContentLoaded", function () {
         datasets: [
           {
             label: "Sales",
-            data: data.salesExpense?.sales || [],
+            data: salesData,
             borderColor: "green",
             fill: false
           },
           {
             label: "Expenses",
-            data: data.salesExpense?.expenses || [],
+            data: expenseData,
             borderColor: "red",
             fill: false
           }
@@ -167,5 +181,5 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   populateYearDropdown();
-  fetchData(); // Load initial data
+  fetchData();
 });
