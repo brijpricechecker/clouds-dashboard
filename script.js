@@ -2,8 +2,7 @@ let groupedChart, salesExpenseChart;
 let rawData = {};
 
 const monthOrder = [
-  "january", "february", "march", "april", "may", "june",
-  "july", "august", "september", "october", "november", "december"
+  "january", "february", "march", "april", "may", "june", "july"
 ];
 
 function fetchData() {
@@ -32,21 +31,15 @@ function fetchData() {
 }
 
 function updateKPIs(data, selectedMonth) {
-  const totalSales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
-  const totalCashouts = selectedMonth === "all" ? data.totalCashoutsTotal : (data.totalCashoutsByMonth[selectedMonth] || 0);
-
-  let totalExpenses = selectedMonth === "all"
-    ? Object.values(data.monthlyCategoryTotals || {}).reduce((sum, month) => sum + Object.values(month || {}).reduce((a, b) => a + b, 0), 0)
-    : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+  const monthKey = selectedMonth.toLowerCase();
+  const totalSales = selectedMonth === "all" ? data.totalSales : (data.monthlySales?.[monthKey] || 0);
+  const totalExpenses = selectedMonth === "all" ? data.totalExpenses : (data.monthlyExpenses?.[monthKey] || 0);
+  const totalCashouts = selectedMonth === "all" ? data.totalCashouts : (data.monthlyCashouts?.[monthKey] || 0);
 
   document.getElementById("salesKPI").textContent = formatPeso(totalSales);
   document.getElementById("expensesKPI").textContent = formatPeso(totalExpenses);
   document.getElementById("revenueKPI").textContent = formatPeso(totalSales - totalExpenses);
-
-  const cashoutKPI = document.getElementById("cashoutKPI");
-  if (cashoutKPI) {
-    cashoutKPI.textContent = formatPeso(totalCashouts);
-  }
+  document.getElementById("cashoutKPI").textContent = formatPeso(totalCashouts);
 }
 
 function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
@@ -123,53 +116,123 @@ function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
   });
 }
 
+function drawSalesVsExpenseChart(data) {
+  const monthly = data.monthlyCategoryTotals || {};
+  const monthlySales = data.monthlySales || {};
+  const months = monthOrder.filter(m => monthly[m]);
+
+  if (salesExpenseChart) salesExpenseChart.destroy();
+
+  const salesData = months.map(m => monthlySales[m] || 0);
+  const expensesData = months.map(m => {
+    const categories = monthly[m] || {};
+    return Object.values(categories).reduce((sum, v) => sum + v, 0);
+  });
+
+  salesExpenseChart = new Chart(document.getElementById("sales-expense-chart").getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: months.map(capitalize),
+      datasets: [
+        { label: "Sales", backgroundColor: "#28a745", data: salesData },
+        { label: "Expenses", backgroundColor: "#dc3545", data: expensesData }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display: true, text: "Monthly Sales vs Expenses" },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${formatPeso(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { callback: value => formatPeso(value) }
+        }
+      }
+    }
+  });
+}
+
+function updatePLTable(pnlData) {
+  const table = document.getElementById("plTable");
+  table.innerHTML = "";
+
+  if (!pnlData || pnlData.length === 0) {
+    table.innerHTML = "<p>No Profit & Loss Data</p>";
+    return;
+  }
+
+  const headers = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = pnlData.map(row => {
+    const rowHtml = `<td>${row.category}</td>` + monthOrder.map(m => {
+      const val = row[m] || 0;
+      return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
+    }).join("");
+    return `<tr>${rowHtml}</tr>`;
+  }).join("");
+
+  table.innerHTML = `<table>${headers}${rows}</table>`;
+}
+
+function updateSummaryTable(summaryMap) {
+  const table = document.getElementById("summaryTable");
+  table.innerHTML = "";
+
+  if (!summaryMap || Object.keys(summaryMap).length === 0) {
+    table.innerHTML = "<tr><td colspan='13'>No summary data</td></tr>";
+    return;
+  }
+
+  const allCategories = new Set();
+  monthOrder.forEach(month => {
+    if (summaryMap[month]) {
+      Object.keys(summaryMap[month]).forEach(cat => allCategories.add(cat));
+    }
+  });
+
+  const sortedCats = Array.from(allCategories).sort();
+
+  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = sortedCats.map(cat => {
+    const row = `<td>${cat}</td>` + monthOrder.map(m => {
+      const val = summaryMap[m]?.[cat] || 0;
+      return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
+    }).join("");
+    return `<tr>${row}</tr>`;
+  });
+
+  table.innerHTML = header + rows.join("");
+}
+
 function updateCommentary(data, selectedMonth) {
   const div = document.getElementById("aiComment");
-  const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales[selectedMonth] || 0;
-  const expenses = selectedMonth === "all"
-    ? Object.values(data.monthlyCategoryTotals || {}).reduce((sum, month) => sum + Object.values(month || {}).reduce((a, b) => a + b, 0), 0)
-    : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+  const month = selectedMonth.toLowerCase();
+  const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales?.[month] || 0;
+  const expenses = selectedMonth === "all" ? data.totalExpenses : data.monthlyExpenses?.[month] || 0;
   const revenue = sales - expenses;
-
   let comment = `Total sales for the selected period are ${formatPeso(sales)}, while expenses reached ${formatPeso(expenses)}.`;
-  if (revenue > 0) comment += ` This results in a net positive revenue of ${formatPeso(revenue)}, indicating profitability.`;
+  if (revenue > 0) comment += ` This results in a net positive revenue of ${formatPeso(revenue)}.`;
   else if (revenue < 0) comment += ` The period ran at a loss of ${formatPeso(-revenue)}, highlighting areas to manage costs.`;
   else comment += ` The operation broke even for this period.`;
-  comment += `\n\nExpenses are primarily driven by ${getTopCategory(data, selectedMonth)}.`;
+  comment += `<br><br>Expenses are primarily driven by ${getTopCategory(data, month)}.`;
 
-  div.innerHTML = `<p><strong>AI Insight:</strong> ${comment.replace(/\n/g, "<br>")}</p>`;
+  div.innerHTML = `<p><strong>AI Insight:</strong> ${comment}</p>`;
 }
 
 function getTopCategory(data, month) {
-  const monthlyData = data.monthlyCategoryTotals || {};
-  const categories = ["cogs", "fixedexpense", "laborexpense", "operatingexpense", "misc"];
-
-  const totals = {};
-
-  if (month === "all") {
-    for (const m of Object.keys(monthlyData)) {
-      const monthData = monthlyData[m];
-      if (!monthData) continue;
-      for (const cat of categories) {
-        totals[cat] = (totals[cat] || 0) + (monthData[cat] || 0);
-      }
-    }
-  } else {
-    const monthData = monthlyData[month] || {};
-    for (const cat of categories) {
-      totals[cat] = monthData[cat] || 0;
+  const catData = data.monthlyCategoryTotals?.[month] || {};
+  let max = 0, top = "";
+  for (let k in catData) {
+    if (catData[k] > max) {
+      max = catData[k];
+      top = categoryLabel(k);
     }
   }
-
-  let top = "";
-  let max = 0;
-  for (const cat in totals) {
-    if (totals[cat] > max) {
-      max = totals[cat];
-      top = categoryLabel(cat);
-    }
-  }
-
   return top || "various categories";
 }
 
@@ -192,6 +255,12 @@ function categoryLabel(key) {
   }
 }
 
+function showView(view) {
+  document.getElementById("dashboard").style.display = view === "dashboard" ? "block" : "none";
+  document.getElementById("plSection").style.display = view === "pl" ? "block" : "none";
+  document.getElementById("summarySection").style.display = view === "summary" ? "block" : "none";
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("yearSelect").addEventListener("change", fetchData);
   document.getElementById("monthSelect").addEventListener("change", fetchData);
@@ -207,54 +276,3 @@ document.addEventListener("DOMContentLoaded", function () {
 
   fetchData();
 });
-
-function showView(view) {
-  document.getElementById("dashboard").style.display = view === "dashboard" ? "block" : "none";
-  document.getElementById("plSection").style.display = view === "pl" ? "block" : "none";
-  document.getElementById("summarySection").style.display = view === "summary" ? "block" : "none";
-}
-
-function updatePLTable(pnlData) {
-  const table = document.getElementById("plTable");
-  table.innerHTML = "";
-  if (!pnlData || pnlData.length === 0) {
-    table.innerHTML = "<p>No Profit & Loss Data</p>";
-    return;
-  }
-  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = pnlData.map(row => {
-    const rowHtml = `<td>${row.category}</td>` + monthOrder.map(m => {
-      const val = row[m] || 0;
-      return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
-    }).join("");
-    return `<tr>${rowHtml}</tr>`;
-  });
-  table.innerHTML = header + rows.join("");
-}
-
-function updateSummaryTable(summaryMap) {
-  const table = document.getElementById("summaryTable");
-  table.innerHTML = "";
-  if (!summaryMap || Object.keys(summaryMap).length === 0) {
-    table.innerHTML = "<tr><td colspan='13'>No summary data</td></tr>";
-    return;
-  }
-  const grouped = {};
-  for (let month of monthOrder) {
-    const monthData = summaryMap[month] || {};
-    for (let cat in monthData) {
-      const [main, sub] = cat.split("::");
-      grouped[main] = grouped[main] || {};
-      grouped[main][month] = (grouped[main][month] || 0) + (monthData[cat] || 0);
-    }
-  }
-  const header = `<tr><th>Main Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = Object.keys(grouped).map(main => {
-    const rowHtml = `<td>${main}</td>` + monthOrder.map(m => {
-      const val = grouped[main][m] || 0;
-      return `<td>${val === 0 ? "" : formatPeso(val)}</td>`;
-    }).join("");
-    return `<tr>${rowHtml}</tr>`;
-  });
-  table.innerHTML = header + rows.join("");
-}
