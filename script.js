@@ -66,82 +66,94 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function renderCharts(data) {
-    const ctx1 = document.getElementById("grouped-expense-chart").getContext("2d");
-    const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
+function renderCharts(data) {
+  const ctx1 = document.getElementById("grouped-expense-chart").getContext("2d");
+  const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
 
-    const months = data.expenseChart?.months || [];
-    const expenseGroups = data.expenseChart?.groups || [];
+  const months = data.expenseChart?.months || [];
+  const expenseGroups = data.expenseChart?.groups || [];
 
-    // Clear old charts
-    if (window.expenseChart) window.expenseChart.destroy();
-    if (window.salesExpenseChart) window.salesExpenseChart.destroy();
+  // Clear old charts
+  if (window.expenseChart) window.expenseChart.destroy();
+  if (window.salesExpenseChart) window.salesExpenseChart.destroy();
 
-    // Chart 1: Expense % of Sales
-    window.expenseChart = new Chart(ctx1, {
-      type: "bar",
-      data: {
-        labels: months,
-        datasets: expenseGroups.map(group => ({
-          label: group.name,
-          data: group.values,
-          backgroundColor: group.color
-        }))
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: "top" },
-          tooltip: {
-            callbacks: {
-              label: ctx => ctx.dataset.label + ": " + ctx.parsed.y.toFixed(2) + "%"
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: value => value + "%"
+  // Chart 1: Expense % of Sales
+  window.expenseChart = new Chart(ctx1, {
+    type: "bar",
+    data: {
+      labels: months,
+      datasets: expenseGroups.map(group => ({
+        label: group.name,
+        data: group.values,
+        backgroundColor: group.color
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "top" },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const percent = ctx.parsed.y.toFixed(2) + "%";
+              const amount = data.kpis?.totalSales
+                ? "₱" + ((ctx.parsed.y / 100) * data.kpis.totalSales).toLocaleString(undefined, { minimumFractionDigits: 2 })
+                : "₱0.00";
+              return `${ctx.dataset.label}: ${percent} (${amount})`;
             }
           }
         }
-      }
-    });
-
-    // Chart 2: Sales vs Expenses (empty for now unless you add matching backend)
-    window.salesExpenseChart = new Chart(ctx2, {
-      type: "bar",
-      data: {
-        labels: months,
-        datasets: [
-          {
-            label: "Sales",
-            data: [data.kpis?.totalSales || 0],
-            backgroundColor: "#3B8FF3"
-          },
-          {
-            label: "Expenses",
-            data: [data.kpis?.totalExpenses || 0],
-            backgroundColor: "#F3797E"
-          }
-        ]
       },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: "top" }
-        },
-        scales: {
-          y: {
-            ticks: {
-              callback: value => "₱" + value.toLocaleString()
-            }
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => value + "%"
           }
         }
       }
-    });
-  }
+    }
+  });
+
+  // Chart 2: Sales vs Expenses - handle ALL or single month
+  const isAllMonths = (monthSelect.value === "all");
+  const salesData = isAllMonths ? (data.salesExpense?.sales || []) : [data.kpis?.totalSales || 0];
+  const expenseData = isAllMonths ? (data.salesExpense?.expenses || []) : [data.kpis?.totalExpenses || 0];
+  const salesLabels = isAllMonths ? (data.salesExpense?.months || []) : months;
+
+  window.salesExpenseChart = new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels: salesLabels,
+      datasets: [
+        {
+          label: "Sales",
+          data: salesData,
+          backgroundColor: "#3B8FF3"
+        },
+        {
+          label: "Expenses",
+          data: expenseData,
+          backgroundColor: "#F3797E"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "top" }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: value => "₱" + value.toLocaleString()
+          }
+        }
+      }
+    }
+  });
+}
+
 
   function renderPL() {
     if (!dataCache || !dataCache.plHTML) {
