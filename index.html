@@ -111,6 +111,7 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.05);
+      overflow-x: auto;
     }
 
     #plTable table, #reportContainer table {
@@ -122,10 +123,12 @@
       border: 1px solid #ddd;
       padding: 8px;
       text-align: right;
+      white-space: nowrap;
     }
 
     #plTable th, #reportContainer th {
       background: #f0f0f0;
+      font-weight: bold;
     }
 
     .bold-row {
@@ -136,6 +139,17 @@
 
     .highlight {
       color: #4b49ac;
+      font-weight: bold;
+    }
+
+    .subtotal {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+
+    .indent {
+      padding-left: 30px !important;
+      text-align: left !important;
     }
   </style>
 </head>
