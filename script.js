@@ -2,8 +2,7 @@ let groupedChart, salesExpenseChart;
 let rawData = {};
 
 const monthOrder = [
-  "january", "february", "march", "april", "may", "june",
-  "july", "august", "september", "october", "november", "december"
+  "january", "february", "march", "april", "may", "june"
 ];
 
 function fetchData() {
@@ -32,17 +31,14 @@ function fetchData() {
 }
 
 function updateKPIs(data, selectedMonth) {
-  const sales = selectedMonth === "all"
-    ? data.totalSales
-    : (data.monthlySales[selectedMonth] || 0);
-
-  const expenses = selectedMonth === "all"
+  const totalSales = selectedMonth === "all" ? data.totalSales : (data.monthlySales[selectedMonth] || 0);
+  const totalExpenses = selectedMonth === "all"
     ? data.totalExpenses
     : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
 
-  document.getElementById("salesKPI").textContent = formatPeso(sales);
-  document.getElementById("expensesKPI").textContent = formatPeso(expenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(sales - expenses);
+  document.getElementById("salesKPI").textContent = formatPeso(totalSales);
+  document.getElementById("expensesKPI").textContent = formatPeso(totalExpenses);
+  document.getElementById("revenueKPI").textContent = formatPeso(totalSales - totalExpenses);
 }
 
 function drawGroupedExpenseChart(data, filterCategory, selectedMonth) {
@@ -161,34 +157,25 @@ function drawSalesVsExpenseChart(data) {
   });
 }
 
-function updatePLTable(plData) {
+function updatePLTable(pnlData) {
   const table = document.getElementById("plTable");
   table.innerHTML = "";
 
-  if (!plData || plData.length === 0) {
-    table.innerHTML = "<tr><td>No Profit & Loss Data</td></tr>";
+  if (!pnlData || pnlData.length === 0) {
+    table.innerHTML = "<p>No Profit & Loss Data</p>";
     return;
   }
 
-  // Build header row
-  const headerRow = `
-    <tr>
-      <th>Line Item</th>
-      ${monthOrder.slice(0, 6).map(m => `<th>${capitalize(m)}</th>`).join("")}
-      <th>Total</th>
-    </tr>
-  `;
-
-  const rows = plData.map(row => {
-    const monthlyValues = monthOrder.slice(0, 6).map(m => {
+  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = pnlData.map(row => {
+    const cells = monthOrder.map(m => {
       const val = row[m] || 0;
-      return `<td>${formatPeso(val)}</td>`;
-    });
-    const total = monthOrder.reduce((sum, m) => sum + (row[m] || 0), 0);
-    return `<tr><td><strong>${row.category}</strong></td>${monthlyValues.join("")}<td><strong>${formatPeso(total)}</strong></td></tr>`;
+      return `<td>${val ? formatPeso(val) : ""}</td>`;
+    }).join("");
+    return `<tr><td><strong>${row.category}</strong></td>${cells}</tr>`;
   });
 
-  table.innerHTML = headerRow + rows.join("");
+  table.innerHTML = header + rows.join("");
 }
 
 function updateSummaryTable(summaryMap) {
@@ -200,22 +187,21 @@ function updateSummaryTable(summaryMap) {
     return;
   }
 
-  const allCategories = new Set();
-  monthOrder.forEach(month => {
-    if (summaryMap[month]) {
-      Object.keys(summaryMap[month]).forEach(cat => allCategories.add(cat));
-    }
+  const allKeys = new Set();
+  Object.values(summaryMap).forEach(monthData => {
+    Object.keys(monthData).forEach(key => allKeys.add(key));
   });
 
-  const sortedCats = Array.from(allCategories).sort();
+  const sorted = Array.from(allKeys).sort();
 
-  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = sortedCats.map(cat => {
-    const row = `<td>${cat}</td>` + monthOrder.map(m => {
-      const val = summaryMap[m]?.[cat] || 0;
-      return `<td>${formatPeso(val)}</td>`;
+  const header = `<tr><th>Main Category</th><th>Subcategory</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
+  const rows = sorted.map(k => {
+    const [main, sub] = k.split("||");
+    const cells = monthOrder.map(m => {
+      const val = summaryMap[m]?.[k] || 0;
+      return `<td>${val ? formatPeso(val) : ""}</td>`;
     }).join("");
-    return `<tr>${row}</tr>`;
+    return `<tr><td>${main}</td><td>${sub}</td>${cells}</tr>`;
   });
 
   table.innerHTML = header + rows.join("");
@@ -224,13 +210,15 @@ function updateSummaryTable(summaryMap) {
 function updateCommentary(data, selectedMonth) {
   const div = document.getElementById("aiComment");
   const sales = selectedMonth === "all" ? data.totalSales : data.monthlySales[selectedMonth] || 0;
-  const expenses = selectedMonth === "all" ? data.totalExpenses : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
+  const expenses = selectedMonth === "all"
+    ? data.totalExpenses
+    : Object.values(data.monthlyCategoryTotals[selectedMonth] || {}).reduce((a, b) => a + b, 0);
   const revenue = sales - expenses;
   let comment = `Total sales for the selected period are ${formatPeso(sales)}, while expenses reached ${formatPeso(expenses)}.`;
-  if (revenue > 0) comment += ` This results in a net positive revenue of ${formatPeso(revenue)}, indicating profitability.`;
-  else if (revenue < 0) comment += ` The period ran at a loss of ${formatPeso(-revenue)}, highlighting areas to manage costs.`;
-  else comment += ` The operation broke even for this period.`;
-  comment += `\n\nExpenses are primarily driven by ${getTopCategory(data, selectedMonth)}.`;
+  if (revenue > 0) comment += ` Net revenue of ${formatPeso(revenue)} indicates profitability.`;
+  else if (revenue < 0) comment += ` The period ran at a loss of ${formatPeso(-revenue)}.`;
+  else comment += ` The operation broke even.`;
+  comment += `\n\nHighest cost contributor: ${getTopCategory(data, selectedMonth)}.`;
 
   div.innerHTML = `<p><strong>AI Insight:</strong> ${comment.replace(/\n/g, "<br>")}</p>`;
 }
