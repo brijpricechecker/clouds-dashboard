@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const yearSelect = document.getElementById("yearSelect");
   const monthSelect = document.getElementById("monthSelect");
-  const categorySelect = document.getElementById("categorySelect");
 
   const salesKPI = document.getElementById("salesKPI");
   const expensesKPI = document.getElementById("expensesKPI");
@@ -60,22 +59,10 @@ document.addEventListener("DOMContentLoaded", function () {
       revenueKPI.textContent = formatMoney(result.kpis?.revenue);
       cashoutKPI.textContent = formatMoney(result.kpis?.cashout);
 
-      populateCategoryDropdown(result.expenseChart?.groups || []);
       renderCharts(result);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
-  }
-
-  function populateCategoryDropdown(groups) {
-    categorySelect.innerHTML = `<option value="all">All Categories</option>`;
-    groups.forEach(group => {
-      const opt = document.createElement("option");
-      opt.value = group.name;
-      opt.textContent = group.name;
-      categorySelect.appendChild(opt);
-    });
-    categorySelect.addEventListener("change", () => renderCharts(dataCache));
   }
 
   function renderCharts(data) {
@@ -83,24 +70,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
 
     const months = data.expenseChart?.months || [];
-    const groups = data.expenseChart?.groups || [];
-    const totalSales = data.salesExpense?.sales || [];
+    const expenseGroups = data.expenseChart?.groups || [];
 
-    // Convert expense to % of sales
-    const percentGroups = groups.map(group => {
-      const percents = group.values.map((val, i) => {
-        const sales = totalSales[i] || 0;
-        return sales ? (val / sales * 100) : 0;
-      });
-      return {
-        name: group.name,
-        values: percents,
-        color: group.color
-      };
-    });
-
-    const selected = categorySelect.value || "all";
-    const filteredGroups = selected === "all" ? percentGroups : percentGroups.filter(g => g.name === selected);
+    // Custom category colors
+    const categoryColors = {
+      "LABOR": "#4B49AC",
+      "OPERATING": "#98BDFF",
+      "COGS": "#6F42C1",
+      "MISC": "#34B1AA"
+    };
 
     if (window.expenseChart) window.expenseChart.destroy();
     if (window.salesExpenseChart) window.salesExpenseChart.destroy();
@@ -109,18 +87,19 @@ document.addEventListener("DOMContentLoaded", function () {
       type: "bar",
       data: {
         labels: months,
-        datasets: filteredGroups.map(group => ({
+        datasets: expenseGroups.map(group => ({
           label: group.name,
-          data: group.values,
-          backgroundColor: group.color || "rgba(100,100,200,0.5)"
+          data: group.percentages || [],
+          backgroundColor: categoryColors[group.name.toUpperCase()] || "rgba(100,100,200,0.5)",
         }))
       },
       options: {
         responsive: true,
         plugins: {
+          legend: { position: "top" },
           tooltip: {
             callbacks: {
-              label: context => context.dataset.label + ": " + context.raw.toFixed(2) + "%"
+              label: ctx => ctx.dataset.label + ": " + ctx.raw.toFixed(2) + "%"
             }
           }
         },
@@ -128,7 +107,9 @@ document.addEventListener("DOMContentLoaded", function () {
           y: {
             ticks: {
               callback: value => value + "%"
-            }
+            },
+            beginAtZero: true,
+            max: 100
           }
         }
       }
@@ -142,25 +123,31 @@ document.addEventListener("DOMContentLoaded", function () {
           {
             label: "Sales",
             data: data.salesExpense?.sales || [],
-            backgroundColor: "rgba(0, 200, 100, 0.6)"
+            backgroundColor: "#3B8FF3"
           },
           {
             label: "Expenses",
             data: data.salesExpense?.expenses || [],
-            backgroundColor: "rgba(255, 99, 132, 0.6)"
+            backgroundColor: "#F3797E"
           }
         ]
       },
       options: {
         responsive: true,
         plugins: {
-          legend: { position: "top" }
+          legend: { position: "top" },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.dataset.label + ": ₱" + ctx.raw.toLocaleString()
+            }
+          }
         },
         scales: {
           y: {
             ticks: {
               callback: value => "₱" + value.toLocaleString()
-            }
+            },
+            beginAtZero: true
           }
         }
       }
@@ -168,11 +155,19 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderPL() {
-    plTable.innerHTML = dataCache?.plHTML || "<p>No Profit & Loss Data</p>";
+    if (!dataCache || !dataCache.plHTML) {
+      plTable.innerHTML = "<p>No Profit & Loss Data</p>";
+      return;
+    }
+    plTable.innerHTML = dataCache.plHTML;
   }
 
   function renderReport() {
-    reportContainer.innerHTML = dataCache?.reportHTML || "<p>No Sales and Expense Report Found</p>";
+    if (!dataCache || !dataCache.reportHTML) {
+      reportContainer.innerHTML = "<p>No Sales and Expense Report Found</p>";
+      return;
+    }
+    reportContainer.innerHTML = dataCache.reportHTML;
   }
 
   function populateYearDropdown() {
