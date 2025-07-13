@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const yearSelect = document.getElementById("yearSelect");
   const monthSelect = document.getElementById("monthSelect");
 
+  const categoryFilter = document.getElementById("categoryFilter");
+
   const salesKPI = document.getElementById("salesKPI");
   const expensesKPI = document.getElementById("expensesKPI");
   const revenueKPI = document.getElementById("revenueKPI");
@@ -39,6 +41,10 @@ document.addEventListener("DOMContentLoaded", function () {
   yearSelect.addEventListener("change", fetchData);
   monthSelect.addEventListener("change", fetchData);
 
+  if (categoryFilter) {
+    categoryFilter.addEventListener("change", () => renderCharts(dataCache));
+  }
+
   function formatMoney(value) {
     if (value === "" || value === null || isNaN(value)) return "";
     return "₱" + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 });
@@ -54,15 +60,29 @@ document.addEventListener("DOMContentLoaded", function () {
       const result = await response.json();
       dataCache = result;
 
-      salesKPI.textContent = formatMoney(result.kpis?.totalSales);
-      expensesKPI.textContent = formatMoney(result.kpis?.totalExpenses);
-      revenueKPI.textContent = formatMoney(result.kpis?.revenue);
-      cashoutKPI.textContent = formatMoney(result.kpis?.cashout);
+      const kpi = result.kpis || result.kpi || {};
+      salesKPI.textContent = formatMoney(kpi.totalSales);
+      expensesKPI.textContent = formatMoney(kpi.totalExpenses);
+      revenueKPI.textContent = formatMoney(kpi.revenue);
+      cashoutKPI.textContent = formatMoney(kpi.cashout);
 
+      renderCategoryFilter(result.expenseChart?.groups || []);
       renderCharts(result);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
+  }
+
+  function renderCategoryFilter(groups) {
+    if (!categoryFilter) return;
+
+    categoryFilter.innerHTML = `<option value="all">All</option>`;
+    groups.forEach(group => {
+      const opt = document.createElement("option");
+      opt.value = group.name;
+      opt.textContent = group.name;
+      categoryFilter.appendChild(opt);
+    });
   }
 
   function renderCharts(data) {
@@ -72,7 +92,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const months = data.expenseChart?.months || [];
     const expenseGroups = data.expenseChart?.groups || [];
 
-    // Custom category colors
+    const selectedCategory = categoryFilter?.value || "all";
+    const filteredGroups = selectedCategory === "all"
+      ? expenseGroups
+      : expenseGroups.filter(g => g.name === selectedCategory);
+
     const categoryColors = {
       "LABOR": "#4B49AC",
       "OPERATING": "#98BDFF",
@@ -87,9 +111,9 @@ document.addEventListener("DOMContentLoaded", function () {
       type: "bar",
       data: {
         labels: months,
-        datasets: expenseGroups.map(group => ({
+        datasets: filteredGroups.map(group => ({
           label: group.name,
-          data: group.percentages || [],
+          data: group.percentages || group.values || [],
           backgroundColor: categoryColors[group.name.toUpperCase()] || "rgba(100,100,200,0.5)",
         }))
       },
@@ -99,17 +123,17 @@ document.addEventListener("DOMContentLoaded", function () {
           legend: { position: "top" },
           tooltip: {
             callbacks: {
-              label: ctx => ctx.dataset.label + ": " + ctx.raw.toFixed(2) + "%"
+              label: ctx => ctx.dataset.label + ": " + (ctx.raw ?? 0).toFixed(2) + "%"
             }
           }
         },
         scales: {
           y: {
+            beginAtZero: true,
+            max: 100,
             ticks: {
               callback: value => value + "%"
-            },
-            beginAtZero: true,
-            max: 100
+            }
           }
         }
       }
@@ -135,19 +159,14 @@ document.addEventListener("DOMContentLoaded", function () {
       options: {
         responsive: true,
         plugins: {
-          legend: { position: "top" },
-          tooltip: {
-            callbacks: {
-              label: ctx => ctx.dataset.label + ": ₱" + ctx.raw.toLocaleString()
-            }
-          }
+          legend: { position: "top" }
         },
         scales: {
           y: {
+            beginAtZero: true,
             ticks: {
               callback: value => "₱" + value.toLocaleString()
-            },
-            beginAtZero: true
+            }
           }
         }
       }
@@ -181,6 +200,8 @@ document.addEventListener("DOMContentLoaded", function () {
     yearSelect.value = currentYear;
   }
 
+  // Setup
   populateYearDropdown();
+  showSection("dashboard"); // Set dashboard as default
   fetchData();
 });
