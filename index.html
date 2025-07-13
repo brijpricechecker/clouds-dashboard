@@ -2,205 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Restaurant Dashboard</title>
+  <title>Restaurant Financial Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      background-color: #f9f9f9;
-    }
-
-    h1 {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    .container {
       display: flex;
       height: 100vh;
-      overflow: hidden;
     }
 
-    .left-panel {
-      width: 25%;
+    #sidebar {
+      width: 300px;
       padding: 20px;
-      box-shadow: 2px 0 4px rgba(0,0,0,0.1);
-      background-color: #fff;
+      border-right: 1px solid #ddd;
+      background: #f8f8f8;
     }
 
-    .right-panel {
-      flex: 1;
+    #main {
+      flex-grow: 1;
       padding: 20px;
       overflow-y: auto;
     }
 
-    .controls label, .controls select {
-      display: block;
-      margin: 10px 0 5px;
-    }
-
-    .kpis {
-      margin-top: 20px;
+    h1 {
+      text-align: center;
     }
 
     .kpi-box {
-      background: #f3f3f3;
+      background: #f0f0f0;
+      padding: 15px;
       margin-bottom: 10px;
-      padding: 10px;
       border-radius: 8px;
-    }
-
-    .kpi-box h3 {
-      margin: 0;
-      font-size: 14px;
-      color: #444;
-    }
-
-    .kpi-box p {
-      margin: 4px 0 0;
-      font-size: 18px;
       font-weight: bold;
     }
 
-    .view-buttons button {
-      display: block;
-      width: 100%;
-      margin: 5px 0;
-      padding: 10px;
+    .kpi-title {
       font-size: 14px;
+      margin-bottom: 5px;
     }
 
-    canvas {
-      width: 100% !important;
-      height: auto !important;
-      margin: 20px 0;
+    .kpi-value {
+      font-size: 20px;
     }
 
-    .comment-box {
-      background-color: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+    select {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    #aiComment {
       margin-bottom: 20px;
     }
 
-    .comment-box h2 {
-      margin-top: 0;
-      font-size: 16px;
-      color: #555;
-    }
-
-    #plSection, #summarySection {
-      display: none;
+    canvas {
+      max-width: 100%;
+      margin-bottom: 20px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
-      background-color: #fff;
+      margin-top: 10px;
     }
 
     th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
+      padding: 6px;
       text-align: right;
     }
 
-    th:first-child, td:first-child {
-      text-align: left;
+    th {
+      background: #eee;
     }
 
-    th {
-      background-color: #f1f1f1;
+    .pl-row {
+      margin-bottom: 6px;
+    }
+
+    .pl-section {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>Restaurant Financial Dashboard</h1>
+  <div id="sidebar">
+    <label>Year:
+      <select id="yearSelect">
+        <option value="2025">2025</option>
+      </select>
+    </label>
 
-  <div class="container">
-    <div class="left-panel">
-      <div class="controls">
-        <label for="yearSelect">Year:</label>
-        <select id="yearSelect">
-          <option value="2025" selected>2025</option>
-          <option value="2024">2024</option>
-        </select>
+    <label>Month:
+      <select id="monthSelect">
+        <option value="all">All</option>
+        <option value="january">January</option>
+        <option value="february">February</option>
+        <option value="march">March</option>
+        <option value="april">April</option>
+        <option value="may">May</option>
+        <option value="june">June</option>
+        <option value="july">July</option>
+      </select>
+    </label>
 
-        <label for="monthSelect">Month:</label>
-        <select id="monthSelect">
-          <option value="all">All</option>
-          <option value="january">January</option>
-          <option value="february">February</option>
-          <option value="march">March</option>
-          <option value="april">April</option>
-          <option value="may">May</option>
-          <option value="june">June</option>
-          <option value="july">July</option>
-        </select>
+    <label>Category:
+      <select id="categorySelect">
+        <option value="all">All</option>
+        <option value="cogs">COGS</option>
+        <option value="fixedexpense">Fixed Expense</option>
+        <option value="laborexpense">Labor Expense</option>
+        <option value="operatingexpense">Operating Expense</option>
+        <option value="misc">Miscellaneous</option>
+      </select>
+    </label>
 
-        <label for="categorySelect">Category:</label>
-        <select id="categorySelect">
-          <option value="all">All</option>
-          <option value="cogs">COGS</option>
-          <option value="fixedexpense">Fixed Expense</option>
-          <option value="laborexpense">Labor Expense</option>
-          <option value="operatingexpense">Operating Expense</option>
-          <option value="misc">Miscellaneous</option>
-        </select>
-      </div>
-
-      <div class="kpis">
-        <div class="kpi-box">
-          <h3>Total Sales</h3>
-          <p id="salesKPI">₱0.00</p>
-        </div>
-        <div class="kpi-box">
-          <h3>Total Expenses</h3>
-          <p id="expensesKPI">₱0.00</p>
-        </div>
-        <div class="kpi-box">
-          <h3>Total Revenue</h3>
-          <p id="revenueKPI">₱0.00</p>
-        </div>
-        <div class="kpi-box">
-          <h3>Total Cashout Expenditures</h3>
-          <p id="cashoutKPI">₱0.00</p>
-        </div>
-      </div>
-
-      <div class="view-buttons">
-        <button id="btnDashboard">Dashboard</button>
-        <button id="btnPL">P&L Statement</button>
-        <button id="btnSummary">Expense Breakdown</button>
-      </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Total Sales</div>
+      <div class="kpi-value" id="salesKPI">₱0.00</div>
     </div>
 
-    <div class="right-panel">
-      <div class="comment-box">
-        <h2>AI Interpretation</h2>
-        <p id="aiComment">Loading comment...</p>
-      </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Total Expenses</div>
+      <div class="kpi-value" id="expensesKPI">₱0.00</div>
+    </div>
 
-      <div id="dashboard">
-        <canvas id="grouped-expense-chart" height="300"></canvas>
-        <canvas id="sales-expense-chart" height="300"></canvas>
-      </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Total Revenue</div>
+      <div class="kpi-value" id="revenueKPI">₱0.00</div>
+    </div>
 
-      <div id="plSection">
-        <h2>Profit & Loss Statement</h2>
-        <table id="plTable"></table>
-      </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Total Cashout Expenditures</div>
+      <div class="kpi-value" id="cashoutKPI">₱0.00</div>
+    </div>
 
-      <div id="summarySection">
-        <h2>Detailed Expense Summary</h2>
-        <table id="summaryTable"></table>
-      </div>
+    <button id="btnDashboard">Dashboard</button>
+    <button id="btnPL">P&L Statement</button>
+    <button id="btnSummary">Expense Breakdown</button>
+  </div>
+
+  <div id="main">
+    <h1>Restaurant Financial Dashboard</h1>
+
+    <div id="dashboard">
+      <div id="aiComment"></div>
+      <canvas id="grouped-expense-chart"></canvas>
+      <canvas id="sales-expense-chart" style="display: none;"></canvas>
+    </div>
+
+    <div id="plSection" style="display: none;">
+      <div id="plTable" class="pl-section"></div>
+    </div>
+
+    <div id="summarySection" style="display: none;">
+      <table id="summaryTable"></table>
     </div>
   </div>
 
