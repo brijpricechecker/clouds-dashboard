@@ -1,3 +1,5 @@
+// Reverted working script.js version with working KPIs and charts
+
 document.addEventListener("DOMContentLoaded", function () {
   const dashboard = document.getElementById("dashboard");
   const plSection = document.getElementById("plSection");
@@ -55,15 +57,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dataCache = result;
 
-      // Update KPIs
-      salesKPI.textContent = formatMoney(result.kpi?.totalSales);
-      expensesKPI.textContent = formatMoney(result.kpi?.totalExpenses);
-      revenueKPI.textContent = formatMoney(result.kpi?.revenue);
-      cashoutKPI.textContent = formatMoney(result.kpi?.cashout);
+      salesKPI.textContent = formatMoney(result.kpis?.totalSales);
+      expensesKPI.textContent = formatMoney(result.kpis?.totalExpenses);
+      revenueKPI.textContent = formatMoney(result.kpis?.revenue);
+      cashoutKPI.textContent = formatMoney(result.kpis?.cashout);
 
-      // Update Charts
       renderCharts(result);
-
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -105,9 +104,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    const sales = data.salesExpense?.sales || [];
-    const expenses = data.salesExpense?.expenses || [];
-
     window.salesExpenseChart = new Chart(ctx2, {
       type: "line",
       data: {
@@ -115,17 +111,17 @@ document.addEventListener("DOMContentLoaded", function () {
         datasets: [
           {
             label: "Sales",
-            data: sales,
+            data: data.salesExpense?.sales || [],
             borderColor: "green",
-            borderWidth: 2,
-            fill: false
+            fill: false,
+            borderWidth: 2
           },
           {
             label: "Expenses",
-            data: expenses,
+            data: data.salesExpense?.expenses || [],
             borderColor: "red",
-            borderWidth: 2,
-            fill: false
+            fill: false,
+            borderWidth: 2
           }
         ]
       },
