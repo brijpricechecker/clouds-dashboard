@@ -1,5 +1,3 @@
-// Reverted working script.js version with working KPIs and charts
-
 document.addEventListener("DOMContentLoaded", function () {
   const dashboard = document.getElementById("dashboard");
   const plSection = document.getElementById("plSection");
@@ -11,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const yearSelect = document.getElementById("yearSelect");
   const monthSelect = document.getElementById("monthSelect");
+  const categorySelect = document.getElementById("categorySelect");
 
   const salesKPI = document.getElementById("salesKPI");
   const expensesKPI = document.getElementById("expensesKPI");
@@ -42,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
   monthSelect.addEventListener("change", fetchData);
 
   function formatMoney(value) {
-    if (value === "" || value === null || isNaN(value)) return "₱0.00";
+    if (value === "" || value === null || isNaN(value)) return "";
     return "₱" + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 });
   }
 
@@ -54,7 +53,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
       const response = await fetch(url);
       const result = await response.json();
-
       dataCache = result;
 
       salesKPI.textContent = formatMoney(result.kpis?.totalSales);
@@ -62,42 +60,74 @@ document.addEventListener("DOMContentLoaded", function () {
       revenueKPI.textContent = formatMoney(result.kpis?.revenue);
       cashoutKPI.textContent = formatMoney(result.kpis?.cashout);
 
+      populateCategoryDropdown(result.expenseChart?.groups || []);
       renderCharts(result);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   }
 
+  function populateCategoryDropdown(groups) {
+    categorySelect.innerHTML = `<option value="all">All Categories</option>`;
+    groups.forEach(group => {
+      const opt = document.createElement("option");
+      opt.value = group.name;
+      opt.textContent = group.name;
+      categorySelect.appendChild(opt);
+    });
+    categorySelect.addEventListener("change", () => renderCharts(dataCache));
+  }
+
   function renderCharts(data) {
     const ctx1 = document.getElementById("grouped-expense-chart").getContext("2d");
     const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
 
+    const months = data.expenseChart?.months || [];
+    const groups = data.expenseChart?.groups || [];
+    const totalSales = data.salesExpense?.sales || [];
+
+    // Convert expense to % of sales
+    const percentGroups = groups.map(group => {
+      const percents = group.values.map((val, i) => {
+        const sales = totalSales[i] || 0;
+        return sales ? (val / sales * 100) : 0;
+      });
+      return {
+        name: group.name,
+        values: percents,
+        color: group.color
+      };
+    });
+
+    const selected = categorySelect.value || "all";
+    const filteredGroups = selected === "all" ? percentGroups : percentGroups.filter(g => g.name === selected);
+
     if (window.expenseChart) window.expenseChart.destroy();
     if (window.salesExpenseChart) window.salesExpenseChart.destroy();
-
-    const months = data.expenseChart?.months || [];
-    const expenseGroups = data.expenseChart?.groups || [];
 
     window.expenseChart = new Chart(ctx1, {
       type: "bar",
       data: {
         labels: months,
-        datasets: expenseGroups.map(group => ({
+        datasets: filteredGroups.map(group => ({
           label: group.name,
           data: group.values,
-          backgroundColor: group.color || "rgba(100, 100, 200, 0.6)"
+          backgroundColor: group.color || "rgba(100,100,200,0.5)"
         }))
       },
       options: {
         responsive: true,
         plugins: {
-          legend: { position: "top" },
-          tooltip: { mode: "index", intersect: false }
+          tooltip: {
+            callbacks: {
+              label: context => context.dataset.label + ": " + context.raw.toFixed(2) + "%"
+            }
+          }
         },
         scales: {
           y: {
             ticks: {
-              callback: value => "₱" + value.toLocaleString()
+              callback: value => value + "%"
             }
           }
         }
@@ -105,23 +135,19 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     window.salesExpenseChart = new Chart(ctx2, {
-      type: "line",
+      type: "bar",
       data: {
         labels: months,
         datasets: [
           {
             label: "Sales",
             data: data.salesExpense?.sales || [],
-            borderColor: "green",
-            fill: false,
-            borderWidth: 2
+            backgroundColor: "rgba(0, 200, 100, 0.6)"
           },
           {
             label: "Expenses",
             data: data.salesExpense?.expenses || [],
-            borderColor: "red",
-            fill: false,
-            borderWidth: 2
+            backgroundColor: "rgba(255, 99, 132, 0.6)"
           }
         ]
       },
@@ -142,19 +168,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderPL() {
-    if (!dataCache || !dataCache.plHTML) {
-      plTable.innerHTML = "<p>No Profit & Loss Data</p>";
-    } else {
-      plTable.innerHTML = dataCache.plHTML;
-    }
+    plTable.innerHTML = dataCache?.plHTML || "<p>No Profit & Loss Data</p>";
   }
 
   function renderReport() {
-    if (!dataCache || !dataCache.reportHTML) {
-      reportContainer.innerHTML = "<p>No Sales and Expense Report Found</p>";
-    } else {
-      reportContainer.innerHTML = dataCache.reportHTML;
-    }
+    reportContainer.innerHTML = dataCache?.reportHTML || "<p>No Sales and Expense Report Found</p>";
   }
 
   function populateYearDropdown() {
