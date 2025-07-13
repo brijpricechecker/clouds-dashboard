@@ -1,160 +1,89 @@
-// NOTE: Adjust this to your deployment ID
-const scriptUrl = "https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec";
-
+let rawData = {};
 const monthOrder = [
-  "january", "february", "march", "april", "may", "june",
-  "july", "august", "september", "october", "november", "december"
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
 ];
 
-let rawData = {};
-let salesChart, expenseChart;
-
-document.addEventListener("DOMContentLoaded", function () {
-  document.getElementById("monthSelect").addEventListener("change", fetchData);
-  document.getElementById("btnDashboard").addEventListener("click", () => showSection("dashboard"));
-  document.getElementById("btnPL").addEventListener("click", () => showSection("plSection"));
-  document.getElementById("btnReport").addEventListener("click", () => showSection("reportSection"));
-  fetchData();
-});
-
 function fetchData() {
+  const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value.toLowerCase();
-  fetch(`${scriptUrl}?month=${month}`)
+  const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
+
+  fetch(url)
     .then(res => res.json())
     .then(data => {
       rawData = data;
-      updateKPIs(data, month);
-      updateCommentary(data, month);
-      drawCharts(data, month);
+      updateKPIs(data.kpi);
       updatePLTable(data.plData);
-      updateReportTable(data.reportData);
+      updateCommentary(data.kpi, month);
     })
     .catch(err => console.error("Error fetching data:", err));
 }
 
-function updateKPIs(data, month) {
-  const sales = data.monthlySales?.[month] ?? data.totalSales ?? 0;
-  const expenses = data.monthlyExpenses?.[month] ?? data.totalExpenses ?? 0;
-  const cashouts = data.monthlyCashouts?.[month] ?? data.totalCashouts ?? 0;
-
-  document.getElementById("salesKPI").textContent = formatPeso(sales);
-  document.getElementById("expensesKPI").textContent = formatPeso(expenses);
-  document.getElementById("revenueKPI").textContent = formatPeso(sales - expenses);
-  document.getElementById("cashoutKPI").textContent = formatPeso(cashouts);
-}
-
-function drawCharts(data, month) {
-  const categories = data.mainCategories || [];
-  const percentData = categories.map(cat => data.monthlyCategoryPercent?.[month]?.[cat] || 0);
-  const expenseLabels = categories.map(c => capitalize(c));
-
-  if (expenseChart) expenseChart.destroy();
-  expenseChart = new Chart(document.getElementById("grouped-expense-chart").getContext("2d"), {
-    type: "bar",
-    data: {
-      labels: expenseLabels,
-      datasets: [{
-        label: "% of Expenses",
-        data: percentData,
-        backgroundColor: "#007bff"
-      }]
-    },
-    options: {
-      plugins: {
-        title: { display: true, text: "Expenses Breakdown by Category" },
-        datalabels: {
-          anchor: "end",
-          align: "top",
-          formatter: v => v ? v.toFixed(1) + "%" : "",
-        }
-      },
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { callback: val => val + "%" }
-        }
-      }
-    },
-    plugins: [ChartDataLabels]
-  });
-
-  const months = monthOrder.filter(m => data.monthlySales?.[m] !== undefined);
-  const salesData = months.map(m => data.monthlySales?.[m] ?? 0);
-  const expenseData = months.map(m => data.monthlyExpenses?.[m] ?? 0);
-
-  if (salesChart) salesChart.destroy();
-  salesChart = new Chart(document.getElementById("sales-expense-chart").getContext("2d"), {
-    type: "bar",
-    data: {
-      labels: months.map(capitalize),
-      datasets: [
-        { label: "Sales", data: salesData, backgroundColor: "#28a745" },
-        { label: "Expenses", data: expenseData, backgroundColor: "#dc3545" }
-      ]
-    },
-    options: {
-      plugins: {
-        title: { display: true, text: "Sales vs Expenses" }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { callback: val => formatPeso(val) }
-        }
-      }
-    }
-  });
+function updateKPIs(kpi) {
+  document.getElementById("salesKPI").textContent = formatPeso(kpi.totalSales || 0);
+  document.getElementById("expensesKPI").textContent = formatPeso(kpi.totalExpenses || 0);
+  document.getElementById("revenueKPI").textContent = formatPeso(kpi.revenue || 0);
+  document.getElementById("cashoutKPI").textContent = formatPeso(kpi.cashout || 0);
 }
 
 function updatePLTable(plData) {
   const table = document.getElementById("plTable");
-  if (!plData?.length) {
+  table.innerHTML = "";
+
+  if (!plData || plData.length === 0) {
     table.innerHTML = "<p>No Profit & Loss Data</p>";
     return;
   }
-  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = plData.map(row => {
-    const cells = [row.category, ...monthOrder.map(m => row[m] ? `<td>${formatPeso(row[m])}</td>` : "<td></td>")];
-    return `<tr>${cells.join("")}</tr>`;
-  });
-  table.innerHTML = `<table>${header}${rows.join("")}</table>`;
+
+  const headers = Object.keys(plData[0]);
+  const headerRow = `<tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
+  const rows = plData.map(row =>
+    `<tr>${headers.map(h => {
+      const val = row[h];
+      return `<td>${(val === 0 || val === "0") ? "" : (isNaN(val) ? val : formatPeso(val))}</td>`;
+    }).join("")}</tr>`
+  ).join("");
+
+  table.innerHTML = `<table class="styled-table">${headerRow}${rows}</table>`;
 }
 
-function updateReportTable(reportData) {
-  const table = document.getElementById("reportTable");
-  if (!reportData?.length) {
-    table.innerHTML = "<p>No Report Data</p>";
-    return;
-  }
-  const header = `<tr><th>Category</th>${monthOrder.map(m => `<th>${capitalize(m)}</th>`).join("")}</tr>`;
-  const rows = reportData.map(row => {
-    const cells = [row.category, ...monthOrder.map(m => row[m] ? `<td>${formatPeso(row[m])}</td>` : "<td></td>")];
-    return `<tr>${cells.join("")}</tr>`;
-  });
-  table.innerHTML = `<table>${header}${rows.join("")}</table>`;
-}
-
-function updateCommentary(data, month) {
+function updateCommentary(kpi, month) {
   const div = document.getElementById("aiComment");
-  const sales = data.monthlySales?.[month] ?? 0;
-  const expenses = data.monthlyExpenses?.[month] ?? 0;
-  const revenue = sales - expenses;
-  let comment = `Sales: ${formatPeso(sales)} | Expenses: ${formatPeso(expenses)}.`;
-  comment += revenue > 0 ? ` Profit: ${formatPeso(revenue)}.` : revenue < 0 ? ` Loss: ${formatPeso(-revenue)}.` : ` Break-even.`;
+  const sales = kpi.totalSales || 0;
+  const expenses = kpi.totalExpenses || 0;
+  const revenue = kpi.revenue || 0;
+
+  let comment = `Total sales for ${capitalize(month)}: ${formatPeso(sales)}, `
+              + `expenses: ${formatPeso(expenses)}. `;
+  if (revenue > 0) {
+    comment += `The business is profitable with net revenue of ${formatPeso(revenue)}.`;
+  } else if (revenue < 0) {
+    comment += `The period ran at a loss of ${formatPeso(-revenue)}.`;
+  } else {
+    comment += `The operation broke even for this month.`;
+  }
+
   div.innerHTML = `<p><strong>AI Insight:</strong> ${comment}</p>`;
 }
 
-function formatPeso(val) {
-  return typeof val === "number" ? val.toLocaleString("en-PH", { style: "currency", currency: "PHP" }) : val;
+function formatPeso(num) {
+  return Number(num).toLocaleString("en-PH", { style: "currency", currency: "PHP" });
 }
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function showSection(id) {
-  ["dashboard", "plSection", "reportSection"].forEach(s => {
-    document.getElementById(s).style.display = s === id ? "block" : "none";
-  });
+function showView(view) {
+  document.getElementById("dashboard").style.display = view === "dashboard" ? "block" : "none";
+  document.getElementById("plSection").style.display = view === "pl" ? "block" : "none";
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("yearSelect").addEventListener("change", fetchData);
+  document.getElementById("monthSelect").addEventListener("change", fetchData);
+  document.getElementById("btnDashboard").addEventListener("click", () => showView("dashboard"));
+  document.getElementById("btnPL").addEventListener("click", () => showView("pl"));
+  fetchData(); // initial load
+});
