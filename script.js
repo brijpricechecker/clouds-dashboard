@@ -92,18 +92,18 @@ function renderCharts(data) {
       responsive: true,
       plugins: {
         legend: { position: "top" },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const percent = ctx.parsed.y.toFixed(2) + "%";
-              const amount = data.kpis?.totalSales
- //                ? "₱" + ((ctx.parsed.y / 100) * data.kpis.totalSales).toLocaleString(undefined, { minimumFractionDigits: 2 })
-                ? "₱" + ((ctx.parsed.y) * data.kpis.totalSales).toLocaleString(undefined, { minimumFractionDigits: 2 })
-                : "₱0.00";
-              return `${ctx.dataset.label}: ${percent} (${amount})`;
-            }
-          }
-        }
+       tooltip: {
+  callbacks: {
+    label: function (ctx) {
+      const label = ctx.dataset.label || '';
+      const percent = ctx.parsed.y.toFixed(2) + "%";
+      const amount = data.expenseChart?.groups?.[ctx.datasetIndex]?.amounts?.[ctx.dataIndex] || 0;
+      const formattedAmount = "₱" + Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2 });
+      return `${label}: ${percent} (${formattedAmount})`;
+    }
+  }
+}
+
       },
       scales: {
         y: {
