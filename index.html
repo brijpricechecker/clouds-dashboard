@@ -6,6 +6,7 @@
   <title>Clouds Financial Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -137,6 +138,22 @@
     .highlight {
       color: #4b49ac;
     }
+
+    #downloadPdfBtn {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background-color: #4b49ac;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #downloadPdfBtn:hover {
+      background-color: #36357f;
+    }
   </style>
 </head>
 <body>
@@ -207,6 +224,7 @@
   <div class="section" id="reportSection">
     <h2>Sales and Expense Report</h2>
     <div id="reportContainer">Loading...</div>
+    <button id="downloadPdfBtn">Download PDF</button>
   </div>
 
   <script src="script.js"></script>
