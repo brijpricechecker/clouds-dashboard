@@ -6,99 +6,75 @@
       body {
         font-family: Arial, sans-serif;
         padding: 20px;
-        color: #333;
       }
+
       h2 {
         text-align: center;
-        color: #444;
+        margin-bottom: 20px;
       }
+
       table {
-        width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
+        width: 100%;
+        font-size: 14px;
       }
+
       th, td {
-        padding: 8px 10px;
         border: 1px solid #ccc;
+        padding: 6px 10px;
         text-align: right;
       }
+
       td:first-child {
         text-align: left;
       }
+
       tr:nth-child(1) {
         background-color: #f2f2f2;
         font-weight: bold;
       }
+
       .highlight-net-sales {
         background-color: #d9f9d9;
         font-weight: bold;
       }
+
       .highlight-gross-income {
         background-color: #fffacc;
         font-weight: bold;
       }
+
       .highlight-total {
         background-color: #dce6f1;
         font-weight: bold;
       }
-      .highlight-cashout {
+
+      .highlight-total-expenses {
         background-color: #fdd;
         font-weight: bold;
       }
-      .highlight-cashflow {
+
+      .highlight-net-cash-flow {
         color: green;
         font-weight: bold;
       }
-      .section-header {
+
+      .section-label {
         font-weight: bold;
         text-align: left;
-        background-color: #fafafa;
       }
     </style>
   </head>
   <body>
     <h2>Sales and Expense Report</h2>
-    <div id="reportTableContainer"></div>
+    <div id="reportTableContainer">
+      <p>Loading report...</p>
+    </div>
 
     <script>
-      google.script.run.withSuccessHandler(renderReportTable).getSalesExpenseReportData();
-
-      function renderReportTable(data) {
-        const container = document.getElementById("reportTableContainer");
-        const table = document.createElement("table");
-
-        data.forEach((row, rowIndex) => {
-          const tr = document.createElement("tr");
-          const label = (row[0] || "").toLowerCase().trim();
-
-          if (rowIndex === 0) {
-            tr.style.backgroundColor = "#f2f2f2";
-            tr.style.fontWeight = "bold";
-          } else {
-            if (label.includes("net sales")) tr.className = "highlight-net-sales";
-            else if (label.includes("gross income")) tr.className = "highlight-gross-income";
-            else if (label.includes("total fixed expense") || label.includes("total labor expense") ||
-                     label.includes("total operating expense") || label.includes("total misc expense"))
-              tr.className = "highlight-total";
-            else if (label.includes("total expenses (cashout)"))
-              tr.className = "highlight-cashout";
-            else if (label.includes("net cash flow from operations"))
-              tr.className = "highlight-cashflow";
-            else if (["fixed expense", "labor", "operating expense", "miscellaneous expenses", "food & beverages purchases"].some(k => label.includes(k)))
-              tr.className = "section-header";
-          }
-
-          row.forEach(cell => {
-            const td = document.createElement("td");
-            td.textContent = cell;
-            tr.appendChild(td);
-          });
-
-          table.appendChild(tr);
-        });
-
-        container.appendChild(table);
-      }
+      google.script.run.withSuccessHandler(function(reportHTML) {
+        document.getElementById("reportTableContainer").innerHTML = reportHTML;
+      }).getStyledReportTableHTML();
     </script>
   </body>
 </html>
