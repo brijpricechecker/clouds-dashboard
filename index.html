@@ -1,232 +1,174 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Clouds Financial Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <title>Clouds Dashboard</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: "Segoe UI", sans-serif;
       margin: 0;
       padding: 0;
-      background: #f9f9f9;
+      background-color: #f4f6f9;
       color: #333;
     }
-
     header {
-      background: linear-gradient(to right, #4b49ac, #34b1aa);
+      background-color: #2F8BCC;
       color: white;
-      padding: 1em;
-      text-align: center;
-      font-size: 1.5em;
+      padding: 20px;
+      font-size: 24px;
     }
-
-    .tab-buttons {
-      display: flex;
-      justify-content: center;
-      background: #eee;
-      padding: 10px;
-      gap: 10px;
-      flex-wrap: wrap;
+    .container {
+      padding: 20px;
     }
-
-    .tab-buttons button {
-      padding: 10px 20px;
-      font-weight: bold;
+    .button-group {
+      margin-bottom: 20px;
+    }
+    .button {
+      background-color: #2F8BCC;
+      color: white;
       border: none;
-      border-radius: 5px;
-      background: #4b49ac;
-      color: white;
+      padding: 10px 18px;
+      border-radius: 4px;
       cursor: pointer;
-      transition: background 0.3s;
+      margin-right: 10px;
     }
-
-    .tab-buttons button:hover {
-      background: #3a3989;
+    .button:hover {
+      background-color: #256fa1;
     }
-
-    .section {
+    #dashboardView, #reportView {
       display: none;
-      padding: 20px;
     }
 
-    .kpi-boxes {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-bottom: 30px;
-    }
-
-    .kpi {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.05);
-      flex: 1;
-      min-width: 180px;
-      transition: 0.3s ease;
-    }
-
-    .kpi h3 {
-      margin: 0 0 8px;
-      font-size: 14px;
-      color: #555;
-    }
-
-    .kpi p {
-      margin: 0;
-      font-size: 22px;
-      font-weight: bold;
-      color: #4b49ac;
-    }
-
-    .chart-container {
-      margin-top: 20px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.05);
-    }
-
-    canvas {
-      width: 100%;
-      max-height: 300px;
-    }
-
-    select {
-      padding: 8px 10px;
-      margin: 0 10px 15px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-
-    h2 {
-      margin-top: 0;
-    }
-
-    #plTable, #reportContainer {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.05);
-    }
-
-    #plTable table, #reportContainer table {
+    table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
     }
-
-    #plTable th, #plTable td, #reportContainer th, #reportContainer td {
-      border: 1px solid #ddd;
-      padding: 8px;
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 10px;
       text-align: right;
     }
-
-    #plTable th, #reportContainer th {
-      background: #f0f0f0;
+    td:first-child, th:first-child {
+      text-align: left;
     }
-
-    .bold-row {
+    tr:nth-child(1) {
+      background-color: #f2f2f2;
       font-weight: bold;
-      background: #fdfdfd;
-      color: #222;
     }
 
-    .highlight {
-      color: #4b49ac;
-    }
-
-    #downloadPdfBtn {
-      margin-top: 15px;
-      padding: 8px 16px;
-      background-color: #4b49ac;
-      color: white;
-      border: none;
-      border-radius: 5px;
+    /* === Styled report rows === */
+    .highlight-net-sales {
+      background-color: #d9f9d9;
       font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.3s;
     }
-
-    #downloadPdfBtn:hover {
-      background-color: #36357f;
+    .highlight-gross-income {
+      background-color: #fffacc;
+      font-weight: bold;
+    }
+    .highlight-total {
+      background-color: #dce6f1;
+      font-weight: bold;
+    }
+    .highlight-total-expenses {
+      background-color: #fdd;
+      font-weight: bold;
+    }
+    .highlight-net-cash-flow {
+      color: green;
+      font-weight: bold;
+    }
+    .section-label {
+      font-weight: bold;
+      text-align: left;
     }
   </style>
 </head>
 <body>
-
-  <header>
-    Clouds Restaurant Financial Dashboard
-  </header>
-
-  <div class="tab-buttons">
-    <button id="btnDashboard">Dashboard</button>
-    <button id="btnPL">Profit & Loss</button>
-    <button id="btnReport">Sales and Expense Report</button>
-  </div>
-
-  <div class="section" id="dashboard">
-    <div style="margin-bottom: 20px;">
-      <select id="yearSelect"></select>
-      <select id="monthSelect">
-        <option value="all">All Months</option>
-        <option value="january">January</option>
-        <option value="february">February</option>
-        <option value="march">March</option>
-        <option value="april">April</option>
-        <option value="may">May</option>
-        <option value="june">June</option>
-        <option value="july">July</option>
-        <option value="august">August</option>
-        <option value="september">September</option>
-        <option value="october">October</option>
-        <option value="november">November</option>
-        <option value="december">December</option>
-      </select>
+  <header>Clouds Restaurant Dashboard</header>
+  <div class="container">
+    <div class="button-group">
+      <button class="button" onclick="showDashboard()">Dashboard</button>
+      <button class="button" onclick="showReport()">Sales and Expense Report</button>
     </div>
 
-    <div class="kpi-boxes">
-      <div class="kpi">
-        <h3>Total Sales</h3>
-        <p id="salesKPI">₱0.00</p>
-      </div>
-      <div class="kpi">
-        <h3>Total Expenses</h3>
-        <p id="expensesKPI">₱0.00</p>
-      </div>
-      <div class="kpi">
-        <h3>Revenue</h3>
-        <p id="revenueKPI">₱0.00</p>
-      </div>
-      <div class="kpi">
-        <h3>Total Cashout Expenditures</h3>
-        <p id="cashoutKPI">₱0.00</p>
-      </div>
+    <div id="dashboardView">
+      <h2>Main Dashboard</h2>
+      <!-- Include charts and KPIs -->
+      <!-- ... Your other charts and summaries here ... -->
     </div>
 
-    <div class="chart-container">
-      <canvas id="grouped-expense-chart"></canvas>
-    </div>
-
-    <div class="chart-container" style="margin-top: 40px;">
-      <canvas id="sales-expense-chart"></canvas>
+    <div id="reportView">
+      <h2>Sales and Expense Report</h2>
+      <div id="reportContainer">Loading...</div>
     </div>
   </div>
 
-  <div class="section" id="plSection">
-    <h2>Pro-Forma Profit & Loss Statement</h2>
-    <div id="plTable">Loading...</div>
-  </div>
+  <script>
+    function showDashboard() {
+      document.getElementById('dashboardView').style.display = 'block';
+      document.getElementById('reportView').style.display = 'none';
+    }
 
-  <div class="section" id="reportSection">
-    <h2>Sales and Expense Report</h2>
-    <div id="reportContainer">Loading...</div>
-    <button id="downloadPdfBtn">Download PDF</button>
-  </div>
+    function showReport() {
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('reportView').style.display = 'block';
 
-  <script src="script.js"></script>
+      fetchReportHTML();
+    }
+
+    function fetchReportHTML() {
+      fetch('https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_URL/exec')
+        .then(res => res.json())
+        .then(data => {
+          const rawHTML = data.reportHTML;
+          const styledHTML = styleReportHTML(rawHTML);
+          document.getElementById('reportContainer').innerHTML = styledHTML;
+        })
+        .catch(err => {
+          document.getElementById('reportContainer').innerHTML = "Failed to load report.";
+          console.error("Error loading report:", err);
+        });
+    }
+
+    function styleReportHTML(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const rows = doc.querySelectorAll('tr');
+
+      const styleMap = {
+        "net sales": "highlight-net-sales",
+        "FOOD & BEVERAGES PURCHASES": "section-label",
+        "gross income": "highlight-gross-income",
+        "FIXED EXPENSE": "section-label",
+        "total fixed expense": "highlight-total",
+        "LABOR": "section-label",
+        "total labor expense": "highlight-total",
+        "OPERATING EXPENSE": "section-label",
+        "total operating expense": "highlight-total",
+        "MISCELLANEOUS EXPENSES": "section-label",
+        "total misc expense": "highlight-total",
+        "TOTAL EXPENSES (CASHOUT)": "highlight-total-expenses",
+        "NET CASH FLOW FROM OPERATIONS": "highlight-net-cash-flow"
+      };
+
+      rows.forEach((tr, index) => {
+        if (index === 0) return; // Skip header
+        const label = (tr.cells[0]?.textContent || "").toLowerCase().trim();
+        for (const key in styleMap) {
+          if (label.includes(key.toLowerCase())) {
+            tr.classList.add(styleMap[key]);
+            break;
+          }
+        }
+      });
+
+      return doc.body.innerHTML;
+    }
+
+    // Default view
+    showDashboard();
+  </script>
 </body>
 </html>
