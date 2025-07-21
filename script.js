@@ -73,11 +73,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const months = data.expenseChart?.months || [];
     const expenseGroups = data.expenseChart?.groups || [];
 
-    // Clear old charts
     if (window.expenseChart) window.expenseChart.destroy();
     if (window.salesExpenseChart) window.salesExpenseChart.destroy();
 
-    // Chart 1: Expense % of Sales
     window.expenseChart = new Chart(ctx1, {
       type: "bar",
       data: {
@@ -115,7 +113,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    // Chart 2: Sales vs Expenses - handle ALL or single month
     const isAllMonths = (monthSelect.value === "all");
     const salesData = isAllMonths ? (data.salesExpense?.sales || []) : [data.kpis?.totalSales || 0];
     const expenseData = isAllMonths ? (data.salesExpense?.expenses || []) : [data.kpis?.totalExpenses || 0];
@@ -167,7 +164,23 @@ document.addEventListener("DOMContentLoaded", function () {
       reportContainer.innerHTML = "<p>No Sales and Expense Report Found</p>";
       return;
     }
-    reportContainer.innerHTML = dataCache.reportHTML;
+
+    reportContainer.innerHTML = `
+      <button id="exportPDFBtn">Export to PDF</button>
+      ${dataCache.reportHTML}
+    `;
+
+    document.getElementById("exportPDFBtn").addEventListener("click", () => {
+      const element = document.getElementById("reportTable");
+      const opt = {
+        margin: 0.5,
+        filename: `Sales_Expense_Report_${yearSelect.value}_${monthSelect.value}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().from(element).set(opt).save();
+    });
   }
 
   function populateYearDropdown() {
@@ -181,7 +194,6 @@ document.addEventListener("DOMContentLoaded", function () {
     yearSelect.value = currentYear;
   }
 
-  // Initialize
   populateYearDropdown();
   showSection("dashboard");
   fetchData();
