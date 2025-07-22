@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Clouds Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -11,18 +12,22 @@
       background-color: #f4f6f9;
       color: #333;
     }
+
     header {
       background-color: #2F8BCC;
       color: white;
       padding: 20px;
       font-size: 24px;
     }
+
     .container {
       padding: 20px;
     }
+
     .button-group {
       margin-bottom: 20px;
     }
+
     .button {
       background-color: #2F8BCC;
       color: white;
@@ -32,53 +37,114 @@
       cursor: pointer;
       margin-right: 10px;
     }
+
     .button:hover {
       background-color: #256fa1;
     }
+
     #dashboardView, #reportView {
       display: none;
     }
 
+    /* KPI Cards */
+    .kpi-container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .kpi-card {
+      flex: 1;
+      min-width: 200px;
+      background-color: #ffffff;
+      padding: 20px;
+      border-left: 6px solid #2F8BCC;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    }
+
+    .kpi-card h4 {
+      margin: 0;
+      font-size: 14px;
+      color: #777;
+    }
+
+    .kpi-card p {
+      font-size: 22px;
+      font-weight: bold;
+      margin: 8px 0 0 0;
+      color: #2F8BCC;
+    }
+
+    /* Charts */
+    .charts-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .chart-box {
+      flex: 1;
+      min-width: 300px;
+      background-color: white;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .chart-box h4 {
+      margin-top: 0;
+    }
+
+    /* Report Table Styling */
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
       background-color: white;
     }
+
     th, td {
       border: 1px solid #ccc;
       padding: 8px 10px;
       text-align: right;
     }
+
     td:first-child, th:first-child {
       text-align: left;
     }
+
     tr:nth-child(1) {
       background-color: #f2f2f2;
       font-weight: bold;
     }
 
-    /* === Styled report rows === */
     .highlight-net-sales {
       background-color: #d9f9d9;
       font-weight: bold;
     }
+
     .highlight-gross-income {
       background-color: #fffacc;
       font-weight: bold;
     }
+
     .highlight-total {
       background-color: #dce6f1;
       font-weight: bold;
     }
+
     .highlight-total-expenses {
       background-color: #fdd;
       font-weight: bold;
     }
+
     .highlight-net-cash-flow {
       color: green;
       font-weight: bold;
     }
+
     .section-label {
       font-weight: bold;
       text-align: left;
@@ -95,8 +161,38 @@
 
     <div id="dashboardView">
       <h2>Main Dashboard</h2>
-      <!-- Include charts and KPIs -->
-      <!-- ... Your other charts and summaries here ... -->
+
+      <!-- KPI Cards -->
+      <div class="kpi-container">
+        <div class="kpi-card">
+          <h4>Total Sales</h4>
+          <p id="kpiSales">₱0</p>
+        </div>
+        <div class="kpi-card">
+          <h4>Total Expenses</h4>
+          <p id="kpiExpenses">₱0</p>
+        </div>
+        <div class="kpi-card">
+          <h4>Net Revenue</h4>
+          <p id="kpiRevenue">₱0</p>
+        </div>
+        <div class="kpi-card">
+          <h4>Cash Out</h4>
+          <p id="kpiCashout">₱0</p>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-row">
+        <div class="chart-box">
+          <h4>Sales vs Expenses</h4>
+          <canvas id="salesExpenseChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h4>Expenses as % of Sales</h4>
+          <canvas id="expensePercentChart"></canvas>
+        </div>
+      </div>
     </div>
 
     <div id="reportView">
@@ -109,12 +205,12 @@
     function showDashboard() {
       document.getElementById('dashboardView').style.display = 'block';
       document.getElementById('reportView').style.display = 'none';
+      loadDashboardData();
     }
 
     function showReport() {
       document.getElementById('dashboardView').style.display = 'none';
       document.getElementById('reportView').style.display = 'block';
-
       fetchReportHTML();
     }
 
@@ -154,7 +250,7 @@
       };
 
       rows.forEach((tr, index) => {
-        if (index === 0) return; // Skip header
+        if (index === 0) return; // skip header
         const label = (tr.cells[0]?.textContent || "").toLowerCase().trim();
         for (const key in styleMap) {
           if (label.includes(key.toLowerCase())) {
@@ -167,7 +263,90 @@
       return doc.body.innerHTML;
     }
 
-    // Default view
+    function loadDashboardData() {
+      fetch('https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec')
+        .then(res => res.json())
+        .then(data => {
+          const { kpis, salesExpense, expenseChart } = data;
+
+          document.getElementById("kpiSales").innerText = `₱${Number(kpis.totalSales).toLocaleString()}`;
+          document.getElementById("kpiExpenses").innerText = `₱${Number(kpis.totalExpenses).toLocaleString()}`;
+          document.getElementById("kpiRevenue").innerText = `₱${Number(kpis.revenue).toLocaleString()}`;
+          document.getElementById("kpiCashout").innerText = `₱${Number(kpis.cashout).toLocaleString()}`;
+
+          drawSalesExpenseChart(salesExpense);
+          drawExpensePercentChart(expenseChart);
+        })
+        .catch(err => {
+          console.error("Dashboard data fetch failed:", err);
+        });
+    }
+
+    function drawSalesExpenseChart(data) {
+      const ctx = document.getElementById("salesExpenseChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: data.months,
+          datasets: [
+            {
+              label: "Sales",
+              backgroundColor: "#2F8BCC",
+              data: data.sales
+            },
+            {
+              label: "Expenses",
+              backgroundColor: "#f77",
+              data: data.expenses
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "bottom" }
+          }
+        }
+      });
+    }
+
+    function drawExpensePercentChart(data) {
+      const ctx = document.getElementById("expensePercentChart").getContext("2d");
+      const datasets = data.groups.map(group => ({
+        label: group.name,
+        backgroundColor: group.color || "#ccc",
+        data: group.values
+      }));
+
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: data.months,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "bottom" },
+            tooltip: {
+              callbacks: {
+                label: context => context.parsed.y + "%"
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: val => val + "%"
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Initial load
     showDashboard();
   </script>
 </body>
