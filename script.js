@@ -32,7 +32,7 @@ function getFilters() {
 
 function loadDashboard() {
   const { year, month, category } = getFilters();
-  fetch(`https://script.google.com/macros/s/YOUR_DEPLOYED_URL/exec?year=${year}&month=${month}&category=${category}`)
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}&category=${category}`)
     .then(res => res.json())
     .then(data => {
       updateKPIs(data.kpis);
@@ -45,7 +45,7 @@ function loadDashboard() {
 
 function loadReport() {
   const { year, month, category } = getFilters();
-  fetch(`https://script.google.com/macros/s/YOUR_DEPLOYED_URL/exec?year=${year}&month=${month}&category=${category}`)
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}&category=${category}`)
     .then(res => res.json())
     .then(data => {
       reportData = data.reportHTML;
@@ -163,7 +163,7 @@ function exportFilteredReportToPDF() {
   const { year, month, category } = getFilters();
   const form = document.createElement("form");
   form.method = "POST";
-  form.action = "https://script.google.com/macros/s/YOUR_DEPLOYED_URL/exec";
+  form.action = "https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec";
   form.target = "_blank";
 
   const mode = document.createElement("input");
