@@ -65,7 +65,7 @@ function loadDashboardData() {
   const category = document.getElementById('categoryFilter')?.value || 'ALL';
 
   const params = new URLSearchParams({ year, month, category });
-  fetch(`https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_URL/exec?${params.toString()}`)
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?${params.toString()}`)
     .then(res => res.json())
     .then(data => {
       const { kpis, salesExpense, expenseChart } = data;
