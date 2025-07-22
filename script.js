@@ -46,7 +46,7 @@ function styleReportHTML(html) {
   };
 
   rows.forEach((tr, index) => {
-    if (index === 0) return; // skip header
+    if (index === 0) return;
     const label = (tr.cells[0]?.textContent || "").toLowerCase().trim();
     for (const key in styleMap) {
       if (label.includes(key.toLowerCase())) {
@@ -60,7 +60,12 @@ function styleReportHTML(html) {
 }
 
 function loadDashboardData() {
-  fetch('https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec')
+  const year = document.getElementById('yearFilter')?.value || '2025';
+  const month = document.getElementById('monthFilter')?.value || 'ALL';
+  const category = document.getElementById('categoryFilter')?.value || 'ALL';
+
+  const params = new URLSearchParams({ year, month, category });
+  fetch(`https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_URL/exec?${params.toString()}`)
     .then(res => res.json())
     .then(data => {
       const { kpis, salesExpense, expenseChart } = data;
@@ -111,7 +116,7 @@ function drawExpensePercentChart(data) {
   const datasets = data.groups.map(group => ({
     label: group.name,
     backgroundColor: group.color || "#ccc",
-    data: group.values
+    data: group.values.map(v => v * 100) // convert decimal to percent
   }));
 
   new Chart(ctx, {
@@ -126,7 +131,7 @@ function drawExpensePercentChart(data) {
         legend: { position: "bottom" },
         tooltip: {
           callbacks: {
-            label: context => context.parsed.y + "%"
+            label: context => `${context.parsed.y.toFixed(1)}%`
           }
         }
       },
@@ -142,7 +147,10 @@ function drawExpensePercentChart(data) {
   });
 }
 
-// Set default view on page load
 document.addEventListener("DOMContentLoaded", () => {
   showDashboard();
+
+  document.getElementById('yearFilter')?.addEventListener('change', loadDashboardData);
+  document.getElementById('monthFilter')?.addEventListener('change', loadDashboardData);
+  document.getElementById('categoryFilter')?.addEventListener('change', loadDashboardData);
 });
