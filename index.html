@@ -9,7 +9,6 @@
       margin: 0;
       padding: 0;
       background-color: #f4f6f9;
-      color: #333;
     }
     header {
       background-color: #2F8BCC;
@@ -35,17 +34,34 @@
     .button:hover {
       background-color: #256fa1;
     }
-    select {
-      padding: 6px;
-      margin-right: 10px;
+
+    .kpi-box {
+      display: inline-block;
+      width: 23%;
+      margin-right: 1%;
+      background: white;
+      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      border-radius: 6px;
+      margin-bottom: 20px;
     }
+    .kpi-title {
+      font-size: 14px;
+      color: #777;
+    }
+    .kpi-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
     #dashboardView, #reportView {
       display: none;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
       background-color: white;
     }
     th, td {
@@ -60,13 +76,37 @@
       background-color: #f2f2f2;
       font-weight: bold;
     }
-    .highlight-net-sales { background-color: #d9f9d9; font-weight: bold; }
-    .highlight-gross-income { background-color: #fffacc; font-weight: bold; }
-    .highlight-total { background-color: #dce6f1; font-weight: bold; }
-    .highlight-total-expenses { background-color: #fdd; font-weight: bold; }
-    .highlight-net-cash-flow { color: green; font-weight: bold; }
-    .section-label { font-weight: bold; text-align: left; }
+
+    .highlight-net-sales {
+      background-color: #d9f9d9;
+      font-weight: bold;
+    }
+    .highlight-gross-income {
+      background-color: #fffacc;
+      font-weight: bold;
+    }
+    .highlight-total {
+      background-color: #dce6f1;
+      font-weight: bold;
+    }
+    .highlight-total-expenses {
+      background-color: #fdd;
+      font-weight: bold;
+    }
+    .highlight-net-cash-flow {
+      color: green;
+      font-weight: bold;
+    }
+    .section-label {
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .chart-container {
+      margin-top: 30px;
+    }
   </style>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 </head>
 <body>
   <header>Clouds Restaurant Dashboard</header>
@@ -74,40 +114,68 @@
     <div class="button-group">
       <button class="button" onclick="showDashboard()">Dashboard</button>
       <button class="button" onclick="showReport()">Sales and Expense Report</button>
-      <button class="button" onclick="exportToPdf()">Export to PDF</button>
     </div>
 
     <div class="filters">
-      <select id="yearFilter" onchange="reloadDashboard()">
+      Year:
+      <select id="yearSelect">
+        <option value="2025">2025</option>
         <option value="2024">2024</option>
-        <option value="2025" selected>2025</option>
       </select>
-      <select id="monthFilter" onchange="reloadDashboard()">
-        <option value="ALL">All Months</option>
-        <option value="JANUARY">January</option>
-        <option value="FEBRUARY">February</option>
-        <option value="MARCH">March</option>
-        <option value="APRIL">April</option>
-        <option value="MAY">May</option>
-        <option value="JUNE">June</option>
-        <option value="JULY">July</option>
-        <option value="AUGUST">August</option>
-        <option value="SEPTEMBER">September</option>
-        <option value="OCTOBER">October</option>
-        <option value="NOVEMBER">November</option>
-        <option value="DECEMBER">December</option>
+      Month:
+      <select id="monthSelect">
+        <option value="ALL">All</option>
+        <option value="January">January</option>
+        <option value="February">February</option>
+        <option value="March">March</option>
+        <option value="April">April</option>
+        <option value="May">May</option>
+        <option value="June">June</option>
+        <option value="July">July</option>
+        <option value="August">August</option>
+        <option value="September">September</option>
+        <option value="October">October</option>
+        <option value="November">November</option>
+        <option value="December">December</option>
       </select>
+      Category:
+      <select id="categorySelect">
+        <option value="ALL">All</option>
+        <option value="FOOD">Food</option>
+        <option value="LABOR">Labor</option>
+        <option value="OPERATING">Operating</option>
+      </select>
+      <button id="filterBtn" class="button">Apply Filter</button>
     </div>
 
     <div id="dashboardView">
-      <h2>Main Dashboard</h2>
-      <div id="kpiContainer"></div>
-      <div id="chartContainer"></div>
+      <div class="kpi-box">
+        <div class="kpi-title">Total Sales</div>
+        <div class="kpi-value" id="totalSales">₱0.00</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-title">Total Expenses</div>
+        <div class="kpi-value" id="totalExpenses">₱0.00</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-title">Revenue</div>
+        <div class="kpi-value" id="revenue">₱0.00</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-title">Cashout</div>
+        <div class="kpi-value" id="cashout">₱0.00</div>
+      </div>
+
+      <div class="chart-container">
+        <div id="expenseChart" style="height: 300px;"></div>
+        <div id="salesExpenseChart" style="height: 300px;"></div>
+      </div>
     </div>
 
     <div id="reportView">
       <h2>Sales and Expense Report</h2>
-      <div id="reportContainer">Loading...</div>
+      <button class="button" id="exportPdfBtn">Export PDF</button>
+      <div id="reportContainer" style="margin-top: 20px;">Loading...</div>
     </div>
   </div>
 
