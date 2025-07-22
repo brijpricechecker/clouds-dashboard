@@ -1,7 +1,10 @@
+// Replace with your actual Apps Script deployed URL:
+const DEPLOYED_URL = 'https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec';
+
 function showDashboard() {
   document.getElementById('dashboardView').style.display = 'block';
   document.getElementById('reportView').style.display = 'none';
-  loadDashboardData();
+  fetchDashboardData();
 }
 
 function showReport() {
@@ -10,8 +13,27 @@ function showReport() {
   fetchReportHTML();
 }
 
+function fetchDashboardData() {
+  fetch(DEPLOYED_URL)
+    .then(res => res.json())
+    .then(data => {
+      const kpi = data.kpis;
+
+      document.getElementById('salesKPI').innerText = kpi.totalSales.toLocaleString();
+      document.getElementById('expensesKPI').innerText = kpi.totalExpenses.toLocaleString();
+      document.getElementById('revenueKPI').innerText = kpi.revenue.toLocaleString();
+      document.getElementById('cashoutKPI').innerText = kpi.cashout.toLocaleString();
+
+      renderGroupedExpenseChart(data.expenseChart);
+      renderSalesExpenseChart(data.salesExpense);
+    })
+    .catch(err => {
+      console.error('Dashboard data fetch failed:', err);
+    });
+}
+
 function fetchReportHTML() {
-  fetch('https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec')
+  fetch(DEPLOYED_URL)
     .then(res => res.json())
     .then(data => {
       const rawHTML = data.reportHTML;
@@ -46,7 +68,7 @@ function styleReportHTML(html) {
   };
 
   rows.forEach((tr, index) => {
-    if (index === 0) return;
+    if (index === 0) return; // skip header
     const label = (tr.cells[0]?.textContent || "").toLowerCase().trim();
     for (const key in styleMap) {
       if (label.includes(key.toLowerCase())) {
@@ -59,68 +81,18 @@ function styleReportHTML(html) {
   return doc.body.innerHTML;
 }
 
-function loadDashboardData() {
-  const year = document.getElementById('yearFilter')?.value || '2025';
-  const month = document.getElementById('monthFilter')?.value || 'ALL';
-  const category = document.getElementById('categoryFilter')?.value || 'ALL';
+function renderGroupedExpenseChart(data) {
+  const ctx = document.getElementById('grouped-expense-chart').getContext('2d');
+  if (window.groupedExpenseChart) window.groupedExpenseChart.destroy();
 
-  const params = new URLSearchParams({ year, month, category });
-  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?${params.toString()}`)
-    .then(res => res.json())
-    .then(data => {
-      const { kpis, salesExpense, expenseChart } = data;
-
-      document.getElementById("kpiSales").innerText = `₱${Number(kpis.totalSales).toLocaleString()}`;
-      document.getElementById("kpiExpenses").innerText = `₱${Number(kpis.totalExpenses).toLocaleString()}`;
-      document.getElementById("kpiRevenue").innerText = `₱${Number(kpis.revenue).toLocaleString()}`;
-      document.getElementById("kpiCashout").innerText = `₱${Number(kpis.cashout).toLocaleString()}`;
-
-      drawSalesExpenseChart(salesExpense);
-      drawExpensePercentChart(expenseChart);
-    })
-    .catch(err => {
-      console.error("Dashboard data fetch failed:", err);
-    });
-}
-
-function drawSalesExpenseChart(data) {
-  const ctx = document.getElementById("salesExpenseChart").getContext("2d");
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: data.months,
-      datasets: [
-        {
-          label: "Sales",
-          backgroundColor: "#2F8BCC",
-          data: data.sales
-        },
-        {
-          label: "Expenses",
-          backgroundColor: "#f77",
-          data: data.expenses
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: "bottom" }
-      }
-    }
-  });
-}
-
-function drawExpensePercentChart(data) {
-  const ctx = document.getElementById("expensePercentChart").getContext("2d");
   const datasets = data.groups.map(group => ({
     label: group.name,
-    backgroundColor: group.color || "#ccc",
-    data: group.values.map(v => v * 100) // convert decimal to percent
+    backgroundColor: group.color,
+    data: group.values.map(v => parseFloat(v.toFixed(2)))
   }));
 
-  new Chart(ctx, {
-    type: "bar",
+  window.groupedExpenseChart = new Chart(ctx, {
+    type: 'bar',
     data: {
       labels: data.months,
       datasets: datasets
@@ -128,18 +100,19 @@ function drawExpensePercentChart(data) {
     options: {
       responsive: true,
       plugins: {
-        legend: { position: "bottom" },
         tooltip: {
           callbacks: {
-            label: context => `${context.parsed.y.toFixed(1)}%`
+            label: ctx => `${ctx.dataset.label}: ${ctx.raw}%`
           }
-        }
+        },
+        legend: { position: 'top' },
+        title: { display: true, text: 'Expense as % of Sales' }
       },
       scales: {
         y: {
           beginAtZero: true,
           ticks: {
-            callback: val => val + "%"
+            callback: value => value + '%'
           }
         }
       }
@@ -147,10 +120,35 @@ function drawExpensePercentChart(data) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  showDashboard();
+function renderSalesExpenseChart(data) {
+  const ctx = document.getElementById('sales-expense-chart').getContext('2d');
+  if (window.salesExpenseChart) window.salesExpenseChart.destroy();
 
-  document.getElementById('yearFilter')?.addEventListener('change', loadDashboardData);
-  document.getElementById('monthFilter')?.addEventListener('change', loadDashboardData);
-  document.getElementById('categoryFilter')?.addEventListener('change', loadDashboardData);
-});
+  window.salesExpenseChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.months,
+      datasets: [
+        {
+          label: 'Sales',
+          data: data.sales,
+          backgroundColor: '#2F8BCC'
+        },
+        {
+          label: 'Expenses',
+          data: data.expenses,
+          backgroundColor: '#FFB64D'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Monthly Sales vs Expenses'
+        }
+      }
+    }
+  });
+}
