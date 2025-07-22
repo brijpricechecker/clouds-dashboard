@@ -1,7 +1,9 @@
+let salesExpenseChart, expenseChart;
+
 function showDashboard() {
   document.getElementById('dashboardView').style.display = 'block';
   document.getElementById('reportView').style.display = 'none';
-  loadDashboardData();
+  loadDashboard();
 }
 
 function showReport() {
@@ -10,8 +12,116 @@ function showReport() {
   fetchReportHTML();
 }
 
+// === LOAD DASHBOARD DATA ===
+function loadDashboard() {
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+  const category = document.getElementById("categorySelect").value;
+
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}&category=${category}`)
+    .then(res => res.json())
+    .then(data => {
+      drawKPIs(data.kpis);
+      drawCharts(data.expenseChart, data.salesExpense);
+    })
+    .catch(err => {
+      console.error("Dashboard data fetch failed:", err);
+    });
+}
+
+// === DRAW KPIs ===
+function drawKPIs(kpis) {
+  const kpiHTML = `
+    <div class="kpi-box">
+      <h3>Total Sales</h3><p>₱${kpis.totalSales.toLocaleString()}</p>
+    </div>
+    <div class="kpi-box">
+      <h3>Total Expenses</h3><p>₱${kpis.totalExpenses.toLocaleString()}</p>
+    </div>
+    <div class="kpi-box">
+      <h3>Revenue</h3><p>₱${kpis.revenue.toLocaleString()}</p>
+    </div>
+    <div class="kpi-box">
+      <h3>Total Cashout</h3><p>₱${kpis.cashout.toLocaleString()}</p>
+    </div>
+  `;
+  document.getElementById("kpis").innerHTML = kpiHTML;
+}
+
+// === DRAW CHARTS ===
+function drawCharts(expenseChartData, salesExpenseData) {
+  const months = salesExpenseData.months;
+
+  // Sales vs Expense Chart
+  if (salesExpenseChart) salesExpenseChart.destroy();
+  const ctx1 = document.getElementById("salesExpenseChart").getContext("2d");
+  salesExpenseChart = new Chart(ctx1, {
+    type: "bar",
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: "Sales",
+          data: salesExpenseData.sales,
+          backgroundColor: "#4B49AC"
+        },
+        {
+          label: "Expenses",
+          data: salesExpenseData.expenses,
+          backgroundColor: "#FF8C94"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "top" } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  // Expense % Chart
+  if (expenseChart) expenseChart.destroy();
+  const ctx2 = document.getElementById("expenseChart").getContext("2d");
+  const datasets = expenseChartData.groups.map(group => ({
+    label: group.name,
+    data: group.values.map(p => (p * 100).toFixed(1)), // convert 0.36 → 36.0
+    backgroundColor: group.color
+  }));
+
+  expenseChart = new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels: expenseChartData.months,
+      datasets
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "top" },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.raw}%`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: val => val + "%"
+          }
+        }
+      }
+    }
+  });
+}
+
+// === LOAD REPORT VIEW ===
 function fetchReportHTML() {
-  fetch('https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec')
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=report&year=${year}&month=${month}`)
     .then(res => res.json())
     .then(data => {
       const rawHTML = data.reportHTML;
@@ -24,6 +134,7 @@ function fetchReportHTML() {
     });
 }
 
+// === STYLE REPORT ROWS ===
 function styleReportHTML(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -59,98 +170,23 @@ function styleReportHTML(html) {
   return doc.body.innerHTML;
 }
 
-function loadDashboardData() {
-  const year = document.getElementById('yearFilter')?.value || '2025';
-  const month = document.getElementById('monthFilter')?.value || 'ALL';
-  const category = document.getElementById('categoryFilter')?.value || 'ALL';
+// === PDF EXPORT ===
+function downloadPDF() {
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
 
-  const params = new URLSearchParams({ year, month, category });
-  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?${params.toString()}`)
-    .then(res => res.json())
-    .then(data => {
-      const { kpis, salesExpense, expenseChart } = data;
-
-      document.getElementById("kpiSales").innerText = `₱${Number(kpis.totalSales).toLocaleString()}`;
-      document.getElementById("kpiExpenses").innerText = `₱${Number(kpis.totalExpenses).toLocaleString()}`;
-      document.getElementById("kpiRevenue").innerText = `₱${Number(kpis.revenue).toLocaleString()}`;
-      document.getElementById("kpiCashout").innerText = `₱${Number(kpis.cashout).toLocaleString()}`;
-
-      drawSalesExpenseChart(salesExpense);
-      drawExpensePercentChart(expenseChart);
-    })
-    .catch(err => {
-      console.error("Dashboard data fetch failed:", err);
-    });
+  window.open(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=download&year=${year}&month=${month}`, '_blank');
 }
 
-function drawSalesExpenseChart(data) {
-  const ctx = document.getElementById("salesExpenseChart").getContext("2d");
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: data.months,
-      datasets: [
-        {
-          label: "Sales",
-          backgroundColor: "#2F8BCC",
-          data: data.sales
-        },
-        {
-          label: "Expenses",
-          backgroundColor: "#f77",
-          data: data.expenses
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: "bottom" }
-      }
-    }
-  });
+function sendPDFEmail() {
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=email&year=${year}&month=${month}`)
+    .then(res => res.text())
+    .then(msg => alert("Email sent: " + msg))
+    .catch(err => alert("Error sending email."));
 }
 
-function drawExpensePercentChart(data) {
-  const ctx = document.getElementById("expensePercentChart").getContext("2d");
-  const datasets = data.groups.map(group => ({
-    label: group.name,
-    backgroundColor: group.color || "#ccc",
-    data: group.values.map(v => v * 100) // convert decimal to percent
-  }));
-
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: data.months,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: "bottom" },
-        tooltip: {
-          callbacks: {
-            label: context => `${context.parsed.y.toFixed(1)}%`
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: val => val + "%"
-          }
-        }
-      }
-    }
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  showDashboard();
-
-  document.getElementById('yearFilter')?.addEventListener('change', loadDashboardData);
-  document.getElementById('monthFilter')?.addEventListener('change', loadDashboardData);
-  document.getElementById('categoryFilter')?.addEventListener('change', loadDashboardData);
-});
+// Load dashboard by default
+showDashboard();
