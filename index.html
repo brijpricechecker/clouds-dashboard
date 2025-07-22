@@ -1,232 +1,173 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Clouds Financial Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <title>Clouds Dashboard</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: "Segoe UI", sans-serif;
       margin: 0;
       padding: 0;
-      background: #f9f9f9;
+      background-color: #f4f6f9;
       color: #333;
     }
-
     header {
-      background: linear-gradient(to right, #4b49ac, #34b1aa);
+      background-color: #2F8BCC;
       color: white;
-      padding: 1em;
-      text-align: center;
-      font-size: 1.5em;
+      padding: 20px;
+      font-size: 24px;
     }
-
-    .tab-buttons {
-      display: flex;
-      justify-content: center;
-      background: #eee;
-      padding: 10px;
-      gap: 10px;
-      flex-wrap: wrap;
+    .container {
+      padding: 20px;
     }
-
-    .tab-buttons button {
-      padding: 10px 20px;
-      font-weight: bold;
+    .button-group {
+      margin-bottom: 20px;
+    }
+    .button {
+      background-color: #2F8BCC;
+      color: white;
       border: none;
-      border-radius: 5px;
-      background: #4b49ac;
-      color: white;
+      padding: 10px 18px;
+      border-radius: 4px;
       cursor: pointer;
-      transition: background 0.3s;
+      margin-right: 10px;
     }
-
-    .tab-buttons button:hover {
-      background: #3a3989;
+    .button:hover {
+      background-color: #256fa1;
     }
-
-    .section {
+    #dashboardView, #reportView {
       display: none;
-      padding: 20px;
-    }
-
-    .kpi-boxes {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-bottom: 30px;
-    }
-
-    .kpi {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.05);
-      flex: 1;
-      min-width: 180px;
-      transition: 0.3s ease;
-    }
-
-    .kpi h3 {
-      margin: 0 0 8px;
-      font-size: 14px;
-      color: #555;
-    }
-
-    .kpi p {
-      margin: 0;
-      font-size: 22px;
-      font-weight: bold;
-      color: #4b49ac;
-    }
-
-    .chart-container {
-      margin-top: 20px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.05);
-    }
-
-    canvas {
-      width: 100%;
-      max-height: 300px;
     }
 
     select {
-      padding: 8px 10px;
-      margin: 0 10px 15px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      margin-right: 10px;
+      padding: 5px;
     }
 
-    h2 {
-      margin-top: 0;
-    }
-
-    #plTable, #reportContainer {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.05);
-    }
-
-    #plTable table, #reportContainer table {
+    table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
     }
-
-    #plTable th, #plTable td, #reportContainer th, #reportContainer td {
-      border: 1px solid #ddd;
-      padding: 8px;
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 10px;
       text-align: right;
     }
-
-    #plTable th, #reportContainer th {
-      background: #f0f0f0;
+    td:first-child, th:first-child {
+      text-align: left;
     }
-
-    .bold-row {
+    tr:nth-child(1) {
+      background-color: #f2f2f2;
       font-weight: bold;
-      background: #fdfdfd;
-      color: #222;
     }
 
-    .highlight {
-      color: #4b49ac;
-    }
-
-    #downloadPdfBtn {
-      margin-top: 15px;
-      padding: 8px 16px;
-      background-color: #4b49ac;
-      color: white;
-      border: none;
-      border-radius: 5px;
+    /* === Styled report rows === */
+    .highlight-net-sales {
+      background-color: #d9f9d9;
       font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.3s;
+    }
+    .highlight-gross-income {
+      background-color: #fffacc;
+      font-weight: bold;
+    }
+    .highlight-total {
+      background-color: #dce6f1;
+      font-weight: bold;
+    }
+    .highlight-total-expenses {
+      background-color: #fdd;
+      font-weight: bold;
+    }
+    .highlight-net-cash-flow {
+      color: green;
+      font-weight: bold;
+    }
+    .section-label {
+      font-weight: bold;
+      text-align: left;
     }
 
-    #downloadPdfBtn:hover {
-      background-color: #36357f;
+    .kpi-box {
+      display: inline-block;
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 12px 20px;
+      margin: 10px;
+      min-width: 150px;
+      text-align: center;
+    }
+    .kpi-box h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #555;
+    }
+    .kpi-box p {
+      font-size: 20px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
+  <header>Clouds Restaurant Dashboard</header>
+  <div class="container">
+    <div class="button-group">
+      <button class="button" onclick="showDashboard()">Dashboard</button>
+      <button class="button" onclick="showReport()">Sales and Expense Report</button>
+    </div>
 
-  <header>
-    Clouds Restaurant Financial Dashboard
-  </header>
-
-  <div class="tab-buttons">
-    <button id="btnDashboard">Dashboard</button>
-    <button id="btnPL">Profit & Loss</button>
-    <button id="btnReport">Sales and Expense Report</button>
-  </div>
-
-  <div class="section" id="dashboard">
-    <div style="margin-bottom: 20px;">
-      <select id="yearSelect"></select>
-      <select id="monthSelect">
-        <option value="all">All Months</option>
-        <option value="january">January</option>
-        <option value="february">February</option>
-        <option value="march">March</option>
-        <option value="april">April</option>
-        <option value="may">May</option>
-        <option value="june">June</option>
-        <option value="july">July</option>
-        <option value="august">August</option>
-        <option value="september">September</option>
-        <option value="october">October</option>
-        <option value="november">November</option>
-        <option value="december">December</option>
+    <div id="filters" style="margin-bottom: 10px;">
+      <select id="yearSelect">
+        <option value="2024">2024</option>
+        <option value="2025" selected>2025</option>
       </select>
+      <select id="monthSelect">
+        <option value="ALL">All Months</option>
+        <option value="January">January</option>
+        <option value="February">February</option>
+        <option value="March">March</option>
+        <option value="April">April</option>
+        <option value="May">May</option>
+        <option value="June">June</option>
+        <option value="July">July</option>
+        <option value="August">August</option>
+        <option value="September">September</option>
+        <option value="October">October</option>
+        <option value="November">November</option>
+        <option value="December">December</option>
+      </select>
+      <select id="categorySelect">
+        <option value="ALL">All Categories</option>
+        <option value="COGS">COGS</option>
+        <option value="LABOR EXPENSE">LABOR EXPENSE</option>
+        <option value="OPERATING EXPENSE">OPERATING EXPENSE</option>
+        <option value="FIXED EXPENSE">FIXED EXPENSE</option>
+        <option value="MISC EXPENSE">MISC EXPENSE</option>
+      </select>
+      <button class="button" onclick="loadDashboard()">Apply Filter</button>
     </div>
 
-    <div class="kpi-boxes">
-      <div class="kpi">
-        <h3>Total Sales</h3>
-        <p id="salesKPI">₱0.00</p>
-      </div>
-      <div class="kpi">
-        <h3>Total Expenses</h3>
-        <p id="expensesKPI">₱0.00</p>
-      </div>
-      <div class="kpi">
-        <h3>Revenue</h3>
-        <p id="revenueKPI">₱0.00</p>
-      </div>
-      <div class="kpi">
-        <h3>Total Cashout Expenditures</h3>
-        <p id="cashoutKPI">₱0.00</p>
+    <div id="dashboardView">
+      <div id="kpis"></div>
+      <div id="charts">
+        <canvas id="salesExpenseChart" height="250"></canvas>
+        <canvas id="expenseChart" height="250"></canvas>
       </div>
     </div>
 
-    <div class="chart-container">
-      <canvas id="grouped-expense-chart"></canvas>
-    </div>
-
-    <div class="chart-container" style="margin-top: 40px;">
-      <canvas id="sales-expense-chart"></canvas>
+    <div id="reportView">
+      <h2>Sales and Expense Report</h2>
+      <div style="margin-bottom: 10px;">
+        <button class="button" onclick="downloadPDF()">Export to PDF</button>
+        <button class="button" onclick="sendPDFEmail()">Send to Email</button>
+      </div>
+      <div id="reportContainer">Loading...</div>
     </div>
   </div>
 
-  <div class="section" id="plSection">
-    <h2>Pro-Forma Profit & Loss Statement</h2>
-    <div id="plTable">Loading...</div>
-  </div>
-
-  <div class="section" id="reportSection">
-    <h2>Sales and Expense Report</h2>
-    <div id="reportContainer">Loading...</div>
-    <button id="downloadPdfBtn">Download PDF</button>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
