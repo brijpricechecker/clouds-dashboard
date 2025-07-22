@@ -1,143 +1,188 @@
-google.charts.load('current', { packages: ['corechart'] });
+document.addEventListener("DOMContentLoaded", function () {
+  const dashboard = document.getElementById("dashboard");
+  const plSection = document.getElementById("plSection");
+  const reportSection = document.getElementById("reportSection");
 
-google.charts.setOnLoadCallback(() => {
-  document.getElementById("filterBtn").addEventListener("click", applyFilters);
-  document.getElementById("exportPdfBtn").addEventListener("click", exportReportPDF);
-  loadDashboard(); // Load default dashboard view
-});
+  const btnDashboard = document.getElementById("btnDashboard");
+  const btnPL = document.getElementById("btnPL");
+  const btnReport = document.getElementById("btnReport");
 
-function applyFilters() {
-  const year = document.getElementById("yearFilter").value;
-  const month = document.getElementById("monthFilter").value;
-  const category = document.getElementById("categoryFilter").value;
+  const yearSelect = document.getElementById("yearSelect");
+  const monthSelect = document.getElementById("monthSelect");
 
-  const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}&category=${category}`;
-  fetch(url)
-    .then(res => res.json())
-    .then(data => {
-      drawCharts(data.expenseChart, data.salesExpense);
-      updateKpis(data.kpis);
-      document.getElementById("reportContainer").innerHTML = styleReportHTML(data.reportHTML);
-    })
-    .catch(err => console.error("Dashboard data fetch failed:", err));
-}
+  const salesKPI = document.getElementById("salesKPI");
+  const expensesKPI = document.getElementById("expensesKPI");
+  const revenueKPI = document.getElementById("revenueKPI");
+  const cashoutKPI = document.getElementById("cashoutKPI");
 
-function loadDashboard() {
-  applyFilters(); // Load default data using current filter values
-}
+  const plTable = document.getElementById("plTable");
+  const reportContainer = document.getElementById("reportContainer");
 
-function updateKpis(kpi) {
-  document.getElementById("kpiSales").innerText = kpi.totalSales.toLocaleString();
-  document.getElementById("kpiExpenses").innerText = kpi.totalExpenses.toLocaleString();
-  document.getElementById("kpiRevenue").innerText = kpi.revenue.toLocaleString();
-  document.getElementById("kpiCashout").innerText = kpi.cashout.toLocaleString();
-}
+  let dataCache = null;
 
-function drawCharts(expenseChart, salesExpense) {
-  drawExpenseChart(expenseChart);
-  drawSalesExpenseChart(salesExpense);
-}
+  function showSection(section) {
+    dashboard.style.display = section === "dashboard" ? "block" : "none";
+    plSection.style.display = section === "pl" ? "block" : "none";
+    reportSection.style.display = section === "report" ? "block" : "none";
+  }
 
-function drawExpenseChart(chartData) {
-  const data = new google.visualization.DataTable();
-  data.addColumn('string', 'Month');
-  chartData.groups.forEach(group => {
-    data.addColumn('number', group.name);
+  btnDashboard.addEventListener("click", () => showSection("dashboard"));
+  btnPL.addEventListener("click", () => {
+    showSection("pl");
+    renderPL();
+  });
+  btnReport.addEventListener("click", () => {
+    showSection("report");
+    renderReport();
   });
 
-  chartData.months.forEach((month, i) => {
-    const row = [month];
-    chartData.groups.forEach(group => {
-      row.push(group.values[i] / 100); // Convert to decimal for chart (% display handled in options)
-    });
-    data.addRow(row);
-  });
+  yearSelect.addEventListener("change", fetchData);
+  monthSelect.addEventListener("change", fetchData);
 
-  const options = {
-    title: 'Expenses as % of Sales',
-    isStacked: true,
-    height: 300,
-    legend: { position: 'top' },
-    vAxis: {
-      format: 'percent',
-      minValue: 0
-    },
-    colors: chartData.groups.map(g => g.color)
-  };
+  function formatMoney(value) {
+    if (value === "" || value === null || isNaN(value)) return "₱0.00";
+    return "₱" + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 });
+  }
 
-  const chart = new google.visualization.ColumnChart(document.getElementById('expenseChart'));
-  chart.draw(data, options);
-}
+  async function fetchData() {
+    const year = yearSelect.value;
+    const month = monthSelect.value;
 
-function drawSalesExpenseChart(salesExpense) {
-  const data = new google.visualization.DataTable();
-  data.addColumn('string', 'Month');
-  data.addColumn('number', 'Sales');
-  data.addColumn('number', 'Expenses');
+    try {
+      const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`;
+      const response = await fetch(url);
+      const result = await response.json();
+      dataCache = result;
 
-  salesExpense.months.forEach((month, i) => {
-    data.addRow([month, salesExpense.sales[i], salesExpense.expenses[i]]);
-  });
+      // Update KPIs
+      salesKPI.textContent = formatMoney(result.kpis?.totalSales);
+      expensesKPI.textContent = formatMoney(result.kpis?.totalExpenses);
+      revenueKPI.textContent = formatMoney(result.kpis?.revenue);
+      cashoutKPI.textContent = formatMoney(result.kpis?.cashout);
 
-  const options = {
-    title: 'Sales vs Expenses',
-    height: 300,
-    legend: { position: 'top' },
-    colors: ['#3B8FF3', '#F3797E']
-  };
-
-  const chart = new google.visualization.ColumnChart(document.getElementById('salesExpenseChart'));
-  chart.draw(data, options);
-}
-
-function exportReportPDF() {
-  fetch('https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?action=pdf')
-    .then(response => response.blob())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Sales_Expense_Report.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
-    })
-    .catch(error => {
-      console.error("Error downloading PDF:", error);
-      alert("Failed to download PDF.");
-    });
-}
-
-function styleReportHTML(html) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const rows = doc.querySelectorAll('tr');
-
-  const styleMap = {
-    "net sales": "highlight-net-sales",
-    "FOOD & BEVERAGES PURCHASES": "section-label",
-    "gross income": "highlight-gross-income",
-    "FIXED EXPENSE": "section-label",
-    "total fixed expense": "highlight-total",
-    "LABOR": "section-label",
-    "total labor expense": "highlight-total",
-    "OPERATING EXPENSE": "section-label",
-    "total operating expense": "highlight-total",
-    "MISCELLANEOUS EXPENSES": "section-label",
-    "total misc expense": "highlight-total",
-    "TOTAL EXPENSES (CASHOUT)": "highlight-total-expenses",
-    "NET CASH FLOW FROM OPERATIONS": "highlight-net-cash-flow"
-  };
-
-  rows.forEach((tr, index) => {
-    if (index === 0) return;
-    const label = (tr.cells[0]?.textContent || "").toLowerCase().trim();
-    for (const key in styleMap) {
-      if (label.includes(key.toLowerCase())) {
-        tr.classList.add(styleMap[key]);
-        break;
-      }
+      renderCharts(result);
+    } catch (error) {
+      console.error("Error fetching data:", error);
     }
-  });
+  }
 
-  return doc.body.innerHTML;
-}
+  function renderCharts(data) {
+    const ctx1 = document.getElementById("grouped-expense-chart").getContext("2d");
+    const ctx2 = document.getElementById("sales-expense-chart").getContext("2d");
+
+    const months = data.expenseChart?.months || [];
+    const expenseGroups = data.expenseChart?.groups || [];
+
+    // Clear old charts
+    if (window.expenseChart) window.expenseChart.destroy();
+    if (window.salesExpenseChart) window.salesExpenseChart.destroy();
+
+    // Chart 1: Expense % of Sales
+    window.expenseChart = new Chart(ctx1, {
+      type: "bar",
+      data: {
+        labels: months,
+        datasets: expenseGroups.map(group => ({
+          label: group.name,
+          data: group.values,
+          backgroundColor: group.color
+        }))
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "top" },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                const label = ctx.dataset.label || '';
+                const percent = (ctx.parsed.y * 100).toFixed(2) + "%";
+                const amount = data.expenseChart?.groups?.[ctx.datasetIndex]?.amounts?.[ctx.dataIndex] || 0;
+                const formattedAmount = "₱" + Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                return `${label}: ${percent} (${formattedAmount})`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => (value * 100).toFixed(0) + "%"
+            }
+          }
+        }
+      }
+    });
+
+    // Chart 2: Sales vs Expenses - handle ALL or single month
+    const isAllMonths = (monthSelect.value === "all");
+    const salesData = isAllMonths ? (data.salesExpense?.sales || []) : [data.kpis?.totalSales || 0];
+    const expenseData = isAllMonths ? (data.salesExpense?.expenses || []) : [data.kpis?.totalExpenses || 0];
+    const salesLabels = isAllMonths ? (data.salesExpense?.months || []) : months;
+
+    window.salesExpenseChart = new Chart(ctx2, {
+      type: "bar",
+      data: {
+        labels: salesLabels,
+        datasets: [
+          {
+            label: "Sales",
+            data: salesData,
+            backgroundColor: "#3B8FF3"
+          },
+          {
+            label: "Expenses",
+            data: expenseData,
+            backgroundColor: "#F3797E"
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "top" }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: value => "₱" + value.toLocaleString()
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderPL() {
+    if (!dataCache || !dataCache.plHTML) {
+      plTable.innerHTML = "<p>No Profit & Loss Data</p>";
+      return;
+    }
+    plTable.innerHTML = dataCache.plHTML;
+  }
+
+  function renderReport() {
+    if (!dataCache || !dataCache.reportHTML) {
+      reportContainer.innerHTML = "<p>No Sales and Expense Report Found</p>";
+      return;
+    }
+    reportContainer.innerHTML = dataCache.reportHTML;
+  }
+
+  function populateYearDropdown() {
+    const currentYear = new Date().getFullYear();
+    for (let y = currentYear - 2; y <= currentYear + 1; y++) {
+      const option = document.createElement("option");
+      option.value = y;
+      option.textContent = y;
+      yearSelect.appendChild(option);
+    }
+    yearSelect.value = currentYear;
+  }
+
+  // Initialize
+  populateYearDropdown();
+  showSection("dashboard");
+  fetchData();
+});
