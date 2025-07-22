@@ -11,7 +11,7 @@ function showReport() {
 }
 
 function fetchReportHTML() {
-  fetch('https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_URL/exec')
+  fetch('https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec')
     .then(res => res.json())
     .then(data => {
       const rawHTML = data.reportHTML;
