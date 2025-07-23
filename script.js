@@ -172,3 +172,37 @@ function loadSalesReport() {
 
 // Load default dashboard
 showDashboard();
+
+function exportPDF() {
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=exportPdf&year=${year}&month=${month}`)
+    .then(res => res.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Sales_Expense_Report_${month}_${year}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    })
+    .catch(err => {
+      alert("Failed to export PDF.");
+      console.error(err);
+    });
+}
+
+function sendPDFEmail() {
+  fetch("https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=emailFullReport")
+    .then(res => res.text())
+    .then(response => {
+      alert("Email sent: " + response);
+    })
+    .catch(err => {
+      alert("Failed to send email.");
+      console.error(err);
+    });
+}
+
