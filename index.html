@@ -157,6 +157,19 @@
     </div>
   </div>
 
+<div class="section" id="reportSection">
+  <h2>Sales and Expense Report</h2>
+
+  <div style="margin-bottom: 15px;">
+    <button onclick="exportPDF()" style="padding: 8px 14px; background-color: #4b49ac; color: white; border: none; border-radius: 5px;">Export to PDF</button>
+    <button onclick="sendPDFEmail()" style="padding: 8px 14px; background-color: #34b1aa; color: white; border: none; border-radius: 5px; margin-left: 10px;">Send to Email</button>
+  </div>
+
+  <div id="reportContainer">Loading...</div>
+</div>
+
+
+  
   <script src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="script.js"></script>
 </body>
