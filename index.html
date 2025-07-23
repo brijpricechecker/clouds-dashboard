@@ -14,6 +14,7 @@
       background: #f9f9f9;
       color: #333;
     }
+
     header {
       background: linear-gradient(to right, #4b49ac, #34b1aa);
       color: white;
@@ -21,6 +22,7 @@
       text-align: center;
       font-size: 1.5em;
     }
+
     .tab-buttons {
       display: flex;
       justify-content: center;
@@ -29,6 +31,7 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+
     .tab-buttons button {
       padding: 10px 20px;
       font-weight: bold;
@@ -37,20 +40,25 @@
       background: #4b49ac;
       color: white;
       cursor: pointer;
+      transition: background 0.3s;
     }
+
     .tab-buttons button:hover {
       background: #3a3989;
     }
+
     .section {
       display: none;
       padding: 20px;
     }
+
     .kpi-boxes {
       display: flex;
       gap: 20px;
       flex-wrap: wrap;
       margin-bottom: 30px;
     }
+
     .kpi {
       background: white;
       padding: 15px;
@@ -58,18 +66,22 @@
       box-shadow: 0 0 8px rgba(0,0,0,0.05);
       flex: 1;
       min-width: 180px;
+      transition: 0.3s ease;
     }
+
     .kpi h3 {
       margin: 0 0 8px;
       font-size: 14px;
       color: #555;
     }
+
     .kpi p {
       margin: 0;
       font-size: 22px;
       font-weight: bold;
       color: #4b49ac;
     }
+
     .chart-container {
       margin-top: 20px;
       background: white;
@@ -77,58 +89,86 @@
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.05);
     }
+
     canvas {
       width: 100%;
       max-height: 300px;
     }
+
     select {
       padding: 8px 10px;
       margin: 0 10px 15px 0;
       border-radius: 5px;
       border: 1px solid #ccc;
     }
+
     h2 {
       margin-top: 0;
     }
+
     #plTable, #reportContainer {
       background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.05);
     }
+
     #plTable table, #reportContainer table {
       width: 100%;
       border-collapse: collapse;
     }
+
     #plTable th, #plTable td, #reportContainer th, #reportContainer td {
       border: 1px solid #ddd;
       padding: 8px;
       text-align: right;
     }
+
     #plTable th, #reportContainer th {
       background: #f0f0f0;
     }
-    .button {
-      background-color: #4b49ac;
+
+    .bold-row {
+      font-weight: bold;
+      background: #fdfdfd;
+      color: #222;
+    }
+
+    .highlight {
+      color: #4b49ac;
+    }
+
+    .btn-row {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-row button {
+      padding: 10px 16px;
+      background: #34b1aa;
       color: white;
       border: none;
-      padding: 10px 16px;
-      margin-top: 20px;
       border-radius: 5px;
+      font-weight: bold;
       cursor: pointer;
     }
-    .button:hover {
-      background-color: #3a3989;
+
+    .btn-row button:hover {
+      background: #299e95;
     }
   </style>
 </head>
 <body>
-  <header>Clouds Restaurant Financial Dashboard</header>
+
+  <header>
+    Clouds Restaurant Financial Dashboard
+  </header>
 
   <div class="tab-buttons">
-    <button id="btnDashboard">Dashboard</button>
-    <button id="btnPL">Profit & Loss</button>
-    <button id="btnReport">Sales and Expense Report</button>
+    <button onclick="showSection('dashboard')">Dashboard</button>
+    <button onclick="showSection('plSection')">Profit & Loss</button>
+    <button onclick="showSection('reportSection')">Sales and Expense Report</button>
   </div>
 
   <div class="section" id="dashboard">
@@ -149,6 +189,7 @@
         <option value="november">November</option>
         <option value="december">December</option>
       </select>
+      <button onclick="loadDashboard()">Apply</button>
     </div>
 
     <div class="kpi-boxes">
@@ -165,7 +206,7 @@
         <p id="revenueKPI">₱0.00</p>
       </div>
       <div class="kpi">
-        <h3>Total Cashout</h3>
+        <h3>Total Cashout Expenditures</h3>
         <p id="cashoutKPI">₱0.00</p>
       </div>
     </div>
@@ -186,8 +227,11 @@
 
   <div class="section" id="reportSection">
     <h2>Sales and Expense Report</h2>
+    <div class="btn-row">
+      <button onclick="exportToPDF()">Export to PDF</button>
+      <button onclick="emailReport()">Email this Report</button>
+    </div>
     <div id="reportContainer">Loading...</div>
-    <!-- Buttons will be injected by script.js -->
   </div>
 
   <script src="script.js"></script>
