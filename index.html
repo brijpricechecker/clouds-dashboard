@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Clouds Financial Dashboard</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
@@ -138,24 +139,23 @@
       color: #4b49ac;
     }
 
-    .btn-row {
+    .actions {
       margin-top: 20px;
       display: flex;
       gap: 10px;
     }
 
-    .btn-row button {
-      padding: 10px 16px;
-      background: #34b1aa;
-      color: white;
+    .actions button {
+      padding: 10px 14px;
+      background: #2f8bcc;
       border: none;
-      border-radius: 5px;
-      font-weight: bold;
+      color: white;
+      border-radius: 6px;
       cursor: pointer;
     }
 
-    .btn-row button:hover {
-      background: #299e95;
+    .actions button:hover {
+      background: #236ea3;
     }
   </style>
 </head>
@@ -166,9 +166,9 @@
   </header>
 
   <div class="tab-buttons">
-    <button onclick="showSection('dashboard')">Dashboard</button>
-    <button onclick="showSection('plSection')">Profit & Loss</button>
-    <button onclick="showSection('reportSection')">Sales and Expense Report</button>
+    <button id="btnDashboard">Dashboard</button>
+    <button id="btnPL">Profit & Loss</button>
+    <button id="btnReport">Sales and Expense Report</button>
   </div>
 
   <div class="section" id="dashboard">
@@ -189,7 +189,6 @@
         <option value="november">November</option>
         <option value="december">December</option>
       </select>
-      <button onclick="loadDashboard()">Apply</button>
     </div>
 
     <div class="kpi-boxes">
@@ -227,9 +226,9 @@
 
   <div class="section" id="reportSection">
     <h2>Sales and Expense Report</h2>
-    <div class="btn-row">
-      <button onclick="exportToPDF()">Export to PDF</button>
-      <button onclick="emailReport()">Email this Report</button>
+    <div class="actions">
+      <button id="btnExportPdf">Export to PDF</button>
+      <button id="btnEmailReport">Email this Report</button>
     </div>
     <div id="reportContainer">Loading...</div>
   </div>
