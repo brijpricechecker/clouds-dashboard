@@ -1,8 +1,10 @@
-document.getElementById("btnDashboard").addEventListener("click", showDashboard);
-document.getElementById("btnPL").addEventListener("click", showPL);
-document.getElementById("btnReport").addEventListener("click", showReport);
+let currentYear = new Date().getFullYear();
 
-let expenseChart, salesExpenseChart;
+document.getElementById("btnDashboard").onclick = showDashboard;
+document.getElementById("btnPL").onclick = showPL;
+document.getElementById("btnReport").onclick = showReport;
+document.getElementById("yearSelect").onchange = loadDashboard;
+document.getElementById("monthSelect").onchange = loadDashboard;
 
 function showDashboard() {
   showSection("dashboard");
@@ -11,7 +13,7 @@ function showDashboard() {
 
 function showPL() {
   showSection("plSection");
-  loadPL();
+  // Add load logic if needed
 }
 
 function showReport() {
@@ -19,11 +21,27 @@ function showReport() {
   loadReport();
 }
 
-function showSection(id) {
-  document.querySelectorAll(".section").forEach(section => section.style.display = "none");
-  document.getElementById(id).style.display = "block";
+function showSection(sectionId) {
+  document.querySelectorAll(".section").forEach(sec => {
+    sec.style.display = "none";
+  });
+  document.getElementById(sectionId).style.display = "block";
 }
 
+// Load years in dropdown
+function populateYearDropdown() {
+  const select = document.getElementById("yearSelect");
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    select.appendChild(opt);
+  }
+  select.value = currentYear;
+}
+
+// Load dashboard data
 function loadDashboard() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
@@ -31,48 +49,52 @@ function loadDashboard() {
   fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`)
     .then(res => res.json())
     .then(data => {
-      document.getElementById("salesKPI").innerText = `₱${data.kpis.totalSales.toLocaleString()}`;
-      document.getElementById("expensesKPI").innerText = `₱${data.kpis.totalExpenses.toLocaleString()}`;
-      document.getElementById("revenueKPI").innerText = `₱${data.kpis.revenue.toLocaleString()}`;
-      document.getElementById("cashoutKPI").innerText = `₱${data.kpis.cashout.toLocaleString()}`;
+      document.getElementById("salesKPI").innerText = formatCurrency(data.kpis.totalSales);
+      document.getElementById("expensesKPI").innerText = formatCurrency(data.kpis.totalExpenses);
+      document.getElementById("revenueKPI").innerText = formatCurrency(data.kpis.revenue);
+      document.getElementById("cashoutKPI").innerText = formatCurrency(data.kpis.cashout);
 
       drawExpenseChart(data.expenseChart);
       drawSalesExpenseChart(data.salesExpense);
     })
-    .catch(err => console.error("Dashboard data fetch failed:", err));
+    .catch(err => {
+      console.error("Dashboard data fetch failed:", err);
+    });
+}
+
+function formatCurrency(num) {
+  return "₱" + Number(num).toLocaleString("en-PH", { minimumFractionDigits: 2 });
 }
 
 function drawExpenseChart(data) {
-  if (expenseChart) expenseChart.destroy();
-
   const ctx = document.getElementById("grouped-expense-chart").getContext("2d");
-  expenseChart = new Chart(ctx, {
+  if (window.expenseChartInstance) window.expenseChartInstance.destroy();
+
+  const datasets = data.groups.map(group => ({
+    label: group.name,
+    backgroundColor: group.color,
+    data: group.values
+  }));
+
+  window.expenseChartInstance = new Chart(ctx, {
     type: "bar",
     data: {
       labels: data.months,
-      datasets: data.groups.map(group => ({
-        label: group.name,
-        data: group.values,
-        backgroundColor: group.color
-      }))
+      datasets: datasets
     },
     options: {
-      responsive: true,
       plugins: {
-        legend: { position: "top" },
         datalabels: {
-          formatter: val => `${val.toFixed(0)}%`,
-          color: '#000'
+          formatter: val => val + "%",
+          color: "#444"
         }
       },
+      responsive: true,
       scales: {
         y: {
           beginAtZero: true,
-          ticks: {
-            callback: val => `${val}%`
-          }
-        },
-        x: { stacked: false }
+          ticks: { callback: val => val + "%" }
+        }
       }
     },
     plugins: [ChartDataLabels]
@@ -80,110 +102,86 @@ function drawExpenseChart(data) {
 }
 
 function drawSalesExpenseChart(data) {
-  if (salesExpenseChart) salesExpenseChart.destroy();
-
   const ctx = document.getElementById("sales-expense-chart").getContext("2d");
-  salesExpenseChart = new Chart(ctx, {
+  if (window.salesChartInstance) window.salesChartInstance.destroy();
+
+  window.salesChartInstance = new Chart(ctx, {
     type: "bar",
     data: {
       labels: data.months,
       datasets: [
         {
           label: "Sales",
-          data: data.sales,
-          backgroundColor: "#4b49ac"
+          backgroundColor: "#4b49ac",
+          data: data.sales
         },
         {
           label: "Expenses",
-          data: data.expenses,
-          backgroundColor: "#34b1aa"
+          backgroundColor: "#34b1aa",
+          data: data.expenses
         }
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { position: "top" },
         datalabels: {
-          formatter: val => `₱${val.toLocaleString()}`,
-          anchor: 'end',
-          align: 'top',
-          color: '#444'
+          formatter: value => "₱" + value.toLocaleString(),
+          anchor: "end",
+          align: "top",
+          color: "#000"
         }
       },
       scales: {
         y: {
           beginAtZero: true,
           ticks: {
-            callback: val => `₱${val.toLocaleString()}`
+            callback: val => "₱" + val.toLocaleString()
           }
-        },
-        x: { stacked: false }
+        }
       }
     },
     plugins: [ChartDataLabels]
   });
 }
 
-function loadPL() {
-  fetch("https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec")
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("plTable").innerHTML = data.reportHTML;
-    })
-    .catch(err => {
-      document.getElementById("plTable").innerText = "Failed to load.";
-    });
-}
-
 function loadReport() {
-  fetch("https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec")
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`)
     .then(res => res.json())
     .then(data => {
       document.getElementById("reportContainer").innerHTML = data.reportHTML;
     })
     .catch(err => {
-      document.getElementById("reportContainer").innerText = "Failed to load.";
+      console.error("Report load failed:", err);
     });
 }
 
-function exportPDF() {
+function exportToPDF() {
   const year = document.getElementById("yearSelect").value;
   const month = document.getElementById("monthSelect").value;
 
-  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=exportPdf&year=${year}&month=${month}`)
-    .then(res => res.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Sales_Expense_Report_${month}_${year}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    })
-    .catch(err => alert("Failed to export PDF."));
+  const url = `https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?pdf=1&year=${year}&month=${month}`;
+  window.open(url, "_blank");
 }
 
-function sendPDFEmail() {
-  fetch("https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=emailFullReport`)
+function sendEmail() {
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect").value;
+
+  fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?email=1&year=${year}&month=${month}`)
     .then(res => res.text())
-    .then(msg => alert("Email sent: " + msg))
-    .catch(err => alert("Failed to send email."));
+    .then(msg => {
+      alert("Report email sent!");
+    })
+    .catch(err => {
+      console.error("Email send failed:", err);
+      alert("Failed to send email.");
+    });
 }
 
-function populateYearDropdown() {
-  const currentYear = new Date().getFullYear();
-  const yearSelect = document.getElementById("yearSelect");
-
-  for (let i = currentYear; i >= currentYear - 5; i--) {
-    const option = document.createElement("option");
-    option.value = i;
-    option.textContent = i;
-    yearSelect.appendChild(option);
-  }
-
-  yearSelect.value = currentYear;
-}
-
+// Init
 populateYearDropdown();
 showDashboard();
