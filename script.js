@@ -1,69 +1,62 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const dashboardBtn = document.getElementById("btnDashboard");
-  const plBtn = document.getElementById("btnPL");
-  const reportBtn = document.getElementById("btnReport");
-
   const dashboard = document.getElementById("dashboard");
   const plSection = document.getElementById("plSection");
   const reportSection = document.getElementById("reportSection");
-
   const yearSelect = document.getElementById("yearSelect");
   const monthSelect = document.getElementById("monthSelect");
 
-  const deployedWebAppUrl = 'https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec'; // Update this!
+  // === Navigation ===
+  document.getElementById("btnDashboard").addEventListener("click", showDashboard);
+  document.getElementById("btnPL").addEventListener("click", () => toggleSection(plSection));
+  document.getElementById("btnReport").addEventListener("click", () => toggleSection(reportSection));
 
-  dashboardBtn.addEventListener("click", showDashboard);
-  plBtn.addEventListener("click", () => showSection(plSection));
-  reportBtn.addEventListener("click", () => showSection(reportSection));
+  function toggleSection(sectionToShow) {
+    [dashboard, plSection, reportSection].forEach(section => section.style.display = "none");
+    sectionToShow.style.display = "block";
+  }
 
   function showDashboard() {
-    showSection(dashboard);
+    toggleSection(dashboard);
     loadDashboard();
   }
 
-  function showSection(section) {
-    [dashboard, plSection, reportSection].forEach(sec => sec.style.display = "none");
-    section.style.display = "block";
+  // === Populate Year Dropdown ===
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear; y >= 2023; y--) {
+    const option = document.createElement("option");
+    option.value = y;
+    option.text = y;
+    yearSelect.appendChild(option);
   }
+  yearSelect.value = currentYear;
 
-  function populateYearDropdown() {
-    const currentYear = new Date().getFullYear();
-    for (let y = currentYear - 2; y <= currentYear + 1; y++) {
-      const option = document.createElement("option");
-      option.value = y;
-      option.textContent = y;
-      if (y === currentYear) option.selected = true;
-      yearSelect.appendChild(option);
-    }
-  }
+  // === Load Data ===
+  yearSelect.addEventListener("change", loadDashboard);
+  monthSelect.addEventListener("change", loadDashboard);
+  showDashboard();
 
   function loadDashboard() {
     const year = yearSelect.value;
     const month = monthSelect.value;
 
-    fetch(`${deployedWebAppUrl}?year=${year}&month=${month}`)
+    fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?year=${year}&month=${month}`)
       .then(res => res.json())
       .then(data => {
-        document.getElementById("salesKPI").innerText = `₱${formatNumber(data.kpis.totalSales)}`;
-        document.getElementById("expensesKPI").innerText = `₱${formatNumber(data.kpis.totalExpenses)}`;
-        document.getElementById("revenueKPI").innerText = `₱${formatNumber(data.kpis.revenue)}`;
-        document.getElementById("cashoutKPI").innerText = `₱${formatNumber(data.kpis.cashout)}`;
+        document.getElementById("salesKPI").innerText = "₱" + data.kpis.totalSales.toLocaleString();
+        document.getElementById("expensesKPI").innerText = "₱" + data.kpis.totalExpenses.toLocaleString();
+        document.getElementById("revenueKPI").innerText = "₱" + data.kpis.revenue.toLocaleString();
+        document.getElementById("cashoutKPI").innerText = "₱" + data.kpis.cashout.toLocaleString();
 
         drawExpenseChart(data.expenseChart);
         drawSalesExpenseChart(data.salesExpense);
 
         document.getElementById("reportContainer").innerHTML = data.reportHTML;
 
-        setupExportButtons(data.reportHTML);
+        attachReportButtons(); // ensure buttons are only added once
       })
-      .catch(err => console.error("Dashboard data fetch failed:", err));
-  }
-
-  function formatNumber(n) {
-    return parseFloat(n).toLocaleString("en-PH", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
+      .catch(err => {
+        console.error("Dashboard data fetch failed:", err);
+      });
   }
 
   function drawExpenseChart(data) {
@@ -73,36 +66,37 @@ document.addEventListener("DOMContentLoaded", function () {
     const datasets = data.groups.map(group => ({
       label: group.name,
       backgroundColor: group.color,
-      data: group.values
+      data: group.values.map(v => (v / 100).toFixed(4)) // Convert to decimal for stacked bar, display as %
     }));
 
     window.expenseChartObj = new Chart(ctx, {
-      type: "bar",
+      type: 'bar',
       data: {
         labels: data.months,
-        datasets: datasets
+        datasets
       },
       options: {
-        responsive: true,
         plugins: {
-          datalabels: {
-            anchor: 'end',
-            align: 'top',
-            formatter: val => `${val.toFixed(0)}%`,
-            color: '#333',
-            font: { weight: 'bold' }
-          },
           tooltip: {
             callbacks: {
-              label: context => `${context.dataset.label}: ${context.raw.toFixed(0)}%`
+              label: ctx => `${ctx.dataset.label}: ${(ctx.raw * 100).toFixed(0)}%`
             }
+          },
+          datalabels: {
+            formatter: val => `${(val * 100).toFixed(0)}%`,
+            color: "#333"
           }
+        },
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false
         },
         scales: {
           y: {
             beginAtZero: true,
             ticks: {
-              callback: val => `${val}%`
+              callback: value => `${(value * 100).toFixed(0)}%`
             }
           }
         }
@@ -113,99 +107,92 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function drawSalesExpenseChart(data) {
     const ctx = document.getElementById("sales-expense-chart").getContext("2d");
-    if (window.salesChartObj) window.salesChartObj.destroy();
+    if (window.salesExpenseChartObj) window.salesExpenseChartObj.destroy();
 
-    window.salesChartObj = new Chart(ctx, {
-      type: "bar",
+    window.salesExpenseChartObj = new Chart(ctx, {
+      type: 'bar',
       data: {
         labels: data.months,
         datasets: [
           {
             label: "Sales",
-            backgroundColor: "#4B49AC",
-            data: data.sales
+            data: data.sales,
+            backgroundColor: "#4b49ac"
           },
           {
             label: "Expenses",
-            backgroundColor: "#FF7C7C",
-            data: data.expenses
+            data: data.expenses,
+            backgroundColor: "#f85c70"
           }
         ]
       },
       options: {
-        responsive: true,
         plugins: {
-          datalabels: {
-            anchor: 'end',
-            align: 'top',
-            formatter: val => `₱${formatNumber(val)}`,
-            color: '#444'
-          },
           tooltip: {
             callbacks: {
-              label: context => `${context.dataset.label}: ₱${formatNumber(context.raw)}`
+              label: ctx => `${ctx.dataset.label}: ₱${Number(ctx.raw).toLocaleString()}`
             }
           }
         },
+        responsive: true,
         scales: {
           y: {
             beginAtZero: true,
             ticks: {
-              callback: val => `₱${val.toLocaleString()}`
+              callback: value => "₱" + Number(value).toLocaleString()
             }
           }
         }
-      },
-      plugins: [ChartDataLabels]
+      }
     });
   }
 
-  function setupExportButtons(reportHTML) {
-    let existingExport = document.getElementById("exportBtn");
-    let existingEmail = document.getElementById("emailBtn");
+  function attachReportButtons() {
+    if (document.getElementById("pdfDownloadBtn")) return;
 
-    if (!existingExport) {
-      const exportBtn = document.createElement("button");
-      exportBtn.id = "exportBtn";
-      exportBtn.innerText = "Download PDF";
-      exportBtn.style.marginRight = "10px";
-      exportBtn.addEventListener("click", () => downloadPDF(reportHTML));
-      document.getElementById("reportSection").prepend(exportBtn);
-    }
+    const container = document.getElementById("reportContainer");
+    const wrapper = document.createElement("div");
+    wrapper.style.marginBottom = "10px";
 
-    if (!existingEmail) {
-      const emailBtn = document.createElement("button");
-      emailBtn.id = "emailBtn";
-      emailBtn.innerText = "Email This Report";
-      emailBtn.addEventListener("click", sendReportEmail);
-      document.getElementById("reportSection").prepend(emailBtn);
-    }
-  }
+    const pdfBtn = document.createElement("button");
+    pdfBtn.innerText = "Export to PDF";
+    pdfBtn.className = "btn";
+    pdfBtn.id = "pdfDownloadBtn";
+    pdfBtn.style.marginRight = "10px";
 
-  function downloadPDF(html) {
-    fetch(`${deployedWebAppUrl}?action=downloadPDF&html=${encodeURIComponent(html)}`)
-      .then(res => res.text())
-      .then(base64 => {
-        const link = document.createElement("a");
-        link.href = `data:application/pdf;base64,${base64}`;
-        link.download = "Sales_and_Expense_Report.pdf";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const emailBtn = document.createElement("button");
+    emailBtn.innerText = "Email this Report";
+    emailBtn.className = "btn";
+    emailBtn.id = "emailReportBtn";
+
+    wrapper.appendChild(pdfBtn);
+    wrapper.appendChild(emailBtn);
+    container.parentNode.insertBefore(wrapper, container);
+
+    // === PDF Export ===
+    pdfBtn.addEventListener("click", () => {
+      const element = document.getElementById("reportContainer");
+      const opt = {
+        margin: 0.5,
+        filename: `Sales_and_Expense_Report.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().from(element).set(opt).save();
+    });
+
+    // === Email Report ===
+    emailBtn.addEventListener("click", () => {
+      fetch(`https://script.google.com/macros/s/AKfycbyGmjvGLIhEIBZByb33_vpYC8P1NPh_wCm4C5hI7IfyL7jsUaxerXWQBuUx0-ohHS7q/exec?mode=email`, {
+        method: 'POST'
       })
-      .catch(err => console.error("PDF download failed:", err));
+        .then(res => res.text())
+        .then(msg => alert(msg))
+        .catch(err => {
+          console.error("Failed to send email:", err);
+          alert("Failed to send report email.");
+        });
+    });
   }
-
-  function sendReportEmail() {
-    fetch(`${deployedWebAppUrl}?action=sendReportEmail`)
-      .then(res => res.text())
-      .then(msg => alert(msg))
-      .catch(err => alert("Email failed: " + err));
-  }
-
-  populateYearDropdown();
-  showDashboard();
-
-  yearSelect.addEventListener("change", loadDashboard);
-  monthSelect.addEventListener("change", loadDashboard);
 });
