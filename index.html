@@ -67,7 +67,6 @@
       box-shadow: 0 0 8px rgba(0,0,0,0.05);
       flex: 1;
       min-width: 180px;
-      transition: 0.3s ease;
     }
 
     .kpi h3 {
@@ -112,7 +111,6 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.05);
-      overflow-x: auto;
     }
 
     #plTable table, #reportContainer table {
@@ -140,18 +138,23 @@
       color: #4b49ac;
     }
 
-    .btn {
-      background-color: #007bff;
-      color: white;
+    .report-controls {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    .report-controls button {
       padding: 8px 16px;
+      margin-left: 10px;
+      background: #4b49ac;
+      color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      font-weight: bold;
     }
 
-    .btn:hover {
-      background-color: #0056b3;
+    .report-controls button:hover {
+      background: #3a3989;
     }
   </style>
 </head>
@@ -223,6 +226,11 @@
   <div class="section" id="reportSection">
     <h2>Sales and Expense Report</h2>
     <div id="reportContainer">Loading...</div>
+
+    <div class="report-controls">
+      <button onclick="exportToPDF()">Export to PDF</button>
+      <button onclick="emailReport()">Email This Report</button>
+    </div>
   </div>
 
   <script src="script.js"></script>
