@@ -6,6 +6,7 @@
   <title>Clouds Financial Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -111,6 +112,7 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.05);
+      overflow-x: auto;
     }
 
     #plTable table, #reportContainer table {
@@ -138,19 +140,18 @@
       color: #4b49ac;
     }
 
-    #exportBtn, #emailBtn {
-      padding: 10px 16px;
-      font-weight: bold;
+    .btn {
+      background-color: #007bff;
+      color: white;
+      padding: 8px 16px;
       border: none;
       border-radius: 5px;
-      background: #34b1aa;
-      color: white;
-      margin: 10px 10px 20px 0;
       cursor: pointer;
+      font-weight: bold;
     }
 
-    #exportBtn:hover, #emailBtn:hover {
-      background: #27948e;
+    .btn:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
