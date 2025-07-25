@@ -22,6 +22,30 @@
       font-size: 1.5em;
     }
 
+    .tab-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px;
+      background: #e0e0e0;
+      flex-wrap: wrap;
+    }
+
+    .tab-buttons button {
+      padding: 10px 20px;
+      font-size: 1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      background-color: #4b49ac;
+      color: white;
+      cursor: pointer;
+    }
+
+    .tab-buttons button:hover {
+      background-color: #3a3989;
+    }
+
     .controls {
       padding: 20px;
       display: flex;
@@ -36,17 +60,6 @@
       font-size: 1em;
       border-radius: 5px;
       border: 1px solid #ccc;
-    }
-
-    button {
-      background-color: #4b49ac;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #3a3989;
     }
 
     .kpis {
@@ -94,7 +107,15 @@
       height: auto;
     }
 
-    #reportContainer {
+    .section {
+      display: none;
+    }
+
+    .active {
+      display: block;
+    }
+
+    #reportContainer, #plContainer {
       background: #fff;
       margin: 20px;
       padding: 20px;
@@ -131,6 +152,12 @@
 <body>
   <header>Clouds Restaurant Financial Dashboard</header>
 
+  <div class="tab-buttons">
+    <button onclick="showTab('dashboard')">Dashboard</button>
+    <button onclick="showTab('pl')">Profit & Loss</button>
+    <button onclick="showTab('report')">Sales and Expense Report</button>
+  </div>
+
   <div class="controls">
     <select id="year">
       <option value="2024">2024</option>
@@ -155,35 +182,31 @@
     <button id="emailReport">Email this Report</button>
   </div>
 
-  <div class="kpis">
-    <div class="kpi">
-      <h3>Total Sales</h3>
-      <p id="totalSales">₱0</p>
+  <div id="dashboard" class="section active">
+    <div class="kpis">
+      <div class="kpi"><h3>Total Sales</h3><p id="totalSales">₱0</p></div>
+      <div class="kpi"><h3>Total Expenses</h3><p id="totalExpenses">₱0</p></div>
+      <div class="kpi"><h3>Revenue</h3><p id="revenue">₱0</p></div>
+      <div class="kpi"><h3>Cashout</h3><p id="cashout">₱0</p></div>
     </div>
-    <div class="kpi">
-      <h3>Total Expenses</h3>
-      <p id="totalExpenses">₱0</p>
-    </div>
-    <div class="kpi">
-      <h3>Revenue</h3>
-      <p id="revenue">₱0</p>
-    </div>
-    <div class="kpi">
-      <h3>Cashout</h3>
-      <p id="cashout">₱0</p>
-    </div>
+    <div class="chart-section"><canvas id="expenseChart"></canvas></div>
+    <div class="chart-section"><canvas id="salesExpenseChart"></canvas></div>
   </div>
 
-  <div class="chart-section">
-    <canvas id="expenseChart"></canvas>
+  <div id="pl" class="section">
+    <div id="plContainer">Profit & Loss data will go here...</div>
   </div>
 
-  <div class="chart-section">
-    <canvas id="salesExpenseChart"></canvas>
+  <div id="report" class="section">
+    <div id="reportContainer">Loading report...</div>
   </div>
 
-  <div id="reportContainer">Loading report...</div>
-
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    }
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
